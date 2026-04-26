@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807328683843",
+    "project_id": "geppoint-ad0e5",
+    "storage_bucket": "geppoint-ad0e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807328683843:android:b75df6c1ecd4affaf481f6",
+        "android_client_info": {
+          "package_name": "com.example.gep_point"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRRhfgkCVY-4-bivzdu2BX6nEivh1WdX4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
