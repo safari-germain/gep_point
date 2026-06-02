@@ -3,20 +3,22 @@ import 'package:gep_point/models/m_specialized_profile.dart';
 
 class UserModel {
   final int id;
-  final String name;
-  final String? prenom;
-  final String? email;
-  final String? genre;
-  final String? phone;
+  String name;
+  String? prenom;
+  String? email;
+  String? genre;
+  String? phone;
   final String role;
   final String status;
-  final String? profile;
-  final String? adresse;
+  String? profile;
+  String? adresse;
   final int? organisationId;
   final OrganisationModel? organisation;
-  final int profileLevel;
-  final List<CompetenceModel> competences;
-  final List<ExperienceModel> experiences;
+  int profileLevel;
+  List<CompetenceModel> competences;
+  List<ExperienceModel> experiences;
+  List<PortfolioModel> portfolios;
+  List<CertificationModel> certifications;
 
   UserModel({
     required this.id,
@@ -32,9 +34,14 @@ class UserModel {
     this.organisationId,
     this.organisation,
     this.profileLevel = 1,
-    this.competences = const [],
-    this.experiences = const [],
-  });
+    List<CompetenceModel>? competences,
+    List<ExperienceModel>? experiences,
+    List<PortfolioModel>? portfolios,
+    List<CertificationModel>? certifications,
+  })  : this.competences = competences ?? [],
+        this.experiences = experiences ?? [],
+        this.portfolios = portfolios ?? [],
+        this.certifications = certifications ?? [];
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -56,6 +63,12 @@ class UserModel {
           : [],
       experiences: json['experiences'] != null 
           ? (json['experiences'] as List).map((e) => ExperienceModel.fromJson(e)).toList() 
+          : [],
+      portfolios: json['portfolios'] != null
+          ? (json['portfolios'] as List).map((p) => PortfolioModel.fromJson(p)).toList()
+          : [],
+      certifications: json['certifications'] != null
+          ? (json['certifications'] as List).map((c) => CertificationModel.fromJson(c)).toList()
           : [],
     );
   }

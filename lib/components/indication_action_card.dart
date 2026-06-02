@@ -33,6 +33,8 @@ class _VIndicationCardState extends State<VIndicationCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: _onTapDown,
@@ -42,21 +44,15 @@ class _VIndicationCardState extends State<VIndicationCard> {
         scale: _scale,
         duration: const Duration(milliseconds: 150),
         child: Container(
-          padding: const EdgeInsets.all(defaultPadding),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: widget.gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(defaultBorderRadious),
-            boxShadow: [
-              BoxShadow(
-                color: widget.gradientColors.last.withOpacity(0.5),
-                blurRadius: 25,
-                offset: const Offset(0, 15),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(24),
+            // Ombre très légère et diffuse pour MD3
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,44 +61,48 @@ class _VIndicationCardState extends State<VIndicationCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    widget.typepoint.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(widget.icon, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        widget.typepoint,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  Icon(widget.icon, color: Colors.white, size: 26),
                 ],
               ),
 
-              const SizedBox(height: 20),
-
-              /// EMV Chip
-              const EmvChip(size: 50),
-
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               /// Rate
               Text(
                 widget.rate,
-                style: const TextStyle(
+                style: theme.textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
-                  fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
+                  letterSpacing: -0.5,
                 ),
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
 
               /// Label
               Text(
                 widget.label,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withOpacity(0.8),
                 ),
               ),
             ],

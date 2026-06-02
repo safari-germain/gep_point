@@ -14,77 +14,94 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Déterminer si c'est une entrée ou sortie (ex: si receiverId est l'utilisateur actuel)
-    // Pour l'instant on se base sur le type ou on pourrait passer l'ID de l'utilisateur
+    final theme = Theme.of(context);
     final bool isIncome = transaction.type == 'receive' || transaction.type == 'distribution';
+    
+    // Icone et couleur
+    final iconData = isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
+    final color = isIncome ? theme.colorScheme.primary : theme.colorScheme.error;
+    final bgColor = isIncome ? theme.colorScheme.primaryContainer : theme.colorScheme.errorContainer;
+    final iconColor = isIncome ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onErrorContainer;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: defaultPadding / 2, vertical: defaultPadding / 2),
-      child: CommonCard(
-        child: Padding(
-          padding: const EdgeInsets.all(2.0),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: isIncome ? primaryColor : Colors.red[600],
-                child: Icon(
-                  isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.type.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isIncome ? "De: ID ${transaction.receiverName}" : "Vers: ID ${transaction.receiverName}",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ref: TX-${transaction.id}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    Text(
-                      DateFormat('dd/MM/yyyy HH:mm').format(transaction.createdAt),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "${isIncome ? '+' : '-'}${transaction.amount.toStringAsFixed(2)} pts",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isIncome ? primaryColor : Colors.red[400],
-                    ),
-                  ),
-                  if (transaction.fee > 0)
-                    Text(
-                      "Frais: ${transaction.fee}",
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                ],
-              ),
-            ],
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: bgColor,
+            shape: BoxShape.circle,
           ),
+          child: Icon(iconData, color: iconColor, size: 24),
+        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                _getDisplayName(transaction, isIncome),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              "${isIncome ? '+' : '-'}${transaction.amount.toStringAsFixed(0)} pts",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _getTypeLabel(transaction),
+                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                Text(
+                  DateFormat('dd MMM HH:mm').format(transaction.createdAt),
+                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+            if (transaction.fee > 0) ...[
+              const SizedBox(height: 2),
+              Text(
+                "Frais: ${transaction.fee}",
+                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.error),
+              ),
+            ]
+          ],
         ),
       ),
     );
+  }
+
+  String _getDisplayName(TransactionModel transaction, bool isIncome) {
+    if (transaction.type.toLowerCase() == 'purchase' || transaction.type.toLowerCase() == 'purse') {
+      return 'Activation compte';
+    }
+    return isIncome ? (transaction.senderName ?? 'Système') : (transaction.receiverName ?? 'Activation compte');
+  }
+
+  String _getTypeLabel(TransactionModel transaction) {
+    final type = transaction.type.toLowerCase();
+    if (type == 'purchase' || type == 'purse') {
+      return 'ACTIVATION COMPTE';
+    }
+    return transaction.type.toUpperCase();
   }
 }

@@ -127,9 +127,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: user.profile != null
-                            ? NetworkImage(getFullImageUrl(user.profile)) as ImageProvider
-                            : const AssetImage('assets/images/saf.jpg'),
+                        backgroundImage: getImageProvider(user.profile),
                       ),
                       Positioned(
                         bottom: 0,
@@ -235,7 +233,6 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
 
                 const SizedBox(height: 24),
 
-                // SECTIONS CONDITIONNELLES SELON LE NIVEAU
                 if (user.profileLevel >= 2) ...[
                   _buildSectionTitle("Expériences Professionnelles"),
                   if (user.experiences.isEmpty)
@@ -244,10 +241,28 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                     ...user.experiences.map((exp) => _buildExperienceItem(exp)),
                 ],
 
-                if (user.profileLevel == 3) ...[
+                if (user.profileLevel >= 3) ...[
                   const SizedBox(height: 16),
                   _buildSectionTitle("Portfolio"),
-                  const _EmptySection(text: "Le portfolio sera bientôt disponible"),
+                  if (user.portfolios.isEmpty)
+                    const _EmptySection(text: "Aucun projet portfolio")
+                  else
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: user.portfolios.length,
+                        itemBuilder: (ctx, i) => _buildPortfolioItem(user.portfolios[i]),
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 16),
+                  _buildSectionTitle("Certifications"),
+                  if (user.certifications.isEmpty)
+                    const _EmptySection(text: "Aucune certification renseignée")
+                  else
+                    ...user.certifications.map((cert) => _buildCertificationItem(cert)),
                 ],
                 
                 const SizedBox(height: 40),
@@ -275,6 +290,52 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
           subtitle: Text(exp.companyName),
           trailing: Text("${exp.startDate.year}"),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPortfolioItem(PortfolioModel p) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: (p.imageUrl != null || p.imagePath != null)
+                ? Image(
+                    image: getImageProvider(p.imageUrl ?? p.imagePath),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  )
+                : Container(color: Colors.white10, child: const Icon(Icons.image, color: Colors.white24)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(p.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildCertificationItem(CertificationModel cert) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.workspace_premium, color: Colors.amber),
+        ),
+        title: Text(cert.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text(cert.institution, style: const TextStyle(fontSize: 12, color: Colors.white70)),
       ),
     );
   }

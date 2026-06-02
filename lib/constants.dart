@@ -8,19 +8,19 @@ const grandisExtendedFont = "Grandis Extended";
 
 // On color 80, 60.... those means opacity
 
-const Color primaryColor = Color(0XFF896CFE);
+const Color primaryColor = Color(0xFF1877F2);
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-const MaterialColor primaryMaterialColor = MaterialColor(0XFF896CFE, <int, Color>{
-  50: Color(0xFFEFECFF),
-  100: Color(0xFFD7D0FF),
-  200: Color(0xFFBDB0FF),
-  300: Color(0xFFA390FF),
-  400: Color(0xFF8F79FF),
-  500: Color(0xFF7B61FF),
-  600: Color(0xFF7359FF),
-  700: Color(0xFF684FFF),
-  800: Color(0xFF5E45FF),
-  900: Color(0xFF6C56DD),
+const MaterialColor primaryMaterialColor = MaterialColor(0xFF1877F2, <int, Color>{
+  50: Color(0xFFE3EFFF),
+  100: Color(0xFFB9D8FF),
+  200: Color(0xFF8BBFFF),
+  300: Color(0xFF5CA6FF),
+  400: Color(0xFF3A92FF),
+  500: Color(0xFF1877F2),
+  600: Color(0xFF156FEA),
+  700: Color(0xFF1164E0),
+  800: Color(0xFF0E5AD6),
+  900: Color(0xFF0848C4),
 });
 const LinearGradient primaryLinearGradient = LinearGradient(
   begin: Alignment.topLeft,

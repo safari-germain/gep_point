@@ -17,6 +17,7 @@ import 'package:gep_point/providers/wallet_provider.dart';
 import 'package:gep_point/providers/profile_provider.dart';
 import 'package:gep_point/api_constants.dart';
 import 'package:gep_point/screen/profile/upgrade/profile_upgrade_screen.dart';
+import 'package:gep_point/screen/search/talent_detail_screen.dart';
 import 'package:provider/provider.dart';
 
 class ProfileUserScren extends StatefulWidget {
@@ -99,8 +100,12 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                     name: user?.name ?? 'Utilisateur',
                     imageSrc: getFullImageUrl(user?.profile),
                     press: () {
-                      Navigator.of(context).push(MaterialPageRoute(
+                      if (user != null && user.profileLevel >= 2) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => TalentDetailScreen(user: user)));
+                      } else {
+                        Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => DetailProfilScreen()));
+                      }
                     },
                   );
                 },

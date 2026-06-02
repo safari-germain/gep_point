@@ -11,11 +11,23 @@ class UserService {
     try {
       final response = await _dio.get(userURL);
       if (response.statusCode == 200) {
-        // Le backend Laravel retourne l'utilisateur dans une clé 'user'
         return UserModel.fromJson(response.data['user']);
       }
     } on DioException catch (e) {
       print("Erreur UserService.getUserProfile: ${e.message}");
+    }
+    return null;
+  }
+
+  /// Récupère les informations d'un utilisateur par son ID
+  Future<UserModel?> getUserById(int id) async {
+    try {
+      final response = await _dio.get('$baseURL/users/$id');
+      if (response.statusCode == 200) {
+        return UserModel.fromJson(response.data['user'] ?? response.data);
+      }
+    } on DioException catch (e) {
+      print("Erreur UserService.getUserById: ${e.message}");
     }
     return null;
   }

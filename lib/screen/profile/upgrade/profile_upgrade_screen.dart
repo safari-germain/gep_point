@@ -27,6 +27,12 @@ class _ProfileUpgradeScreenState extends State<ProfileUpgradeScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final wallet = context.watch<WalletProvider>();

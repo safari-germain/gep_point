@@ -30,6 +30,12 @@ class _OperationsHistroryMarchandPointScreenState extends State<OperationsHistro
   }
 
   @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -66,7 +72,9 @@ class _OperationsHistroryMarchandPointScreenState extends State<OperationsHistro
                         icon: Icons.send,
                         isSelected: selectedPage == 0,
                         onTap: () {
-                          pageController.animateToPage(0, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          if (pageController.hasClients) {
+                            pageController.animateToPage(0, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          }
                         },
                       ),
                       _ActionButton(
@@ -74,7 +82,9 @@ class _OperationsHistroryMarchandPointScreenState extends State<OperationsHistro
                         icon: Icons.download,
                         isSelected: selectedPage == 1,
                         onTap: () {
-                          pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          if (pageController.hasClients) {
+                            pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          }
                         },
                       ),
                     ],
@@ -96,7 +106,7 @@ class _OperationsHistroryMarchandPointScreenState extends State<OperationsHistro
                       _TransactionsList(
                         transactions: sentTransactions,
                         isIncome: false,
-                        loadMore: () => txProvider.loadMoreUserTransfers(widget.organisationId),
+                        loadMore: () => txProvider.fetchOrganisationTransfers(widget.organisationId, loadMore: true),
                         hasMore: txProvider.currentPage < txProvider.lastPage,
                       ),
                       // Réceptions

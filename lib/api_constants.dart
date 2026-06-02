@@ -1,13 +1,29 @@
-const baseURL = "http://10.82.130.157:8000/api";
-const baseUrlForLink = "http://10.65.116.157:8000";
-const baseURlForImages = "http://10.82.130.157:8000/storage";
+import 'package:flutter/material.dart';
+
+const baseURL = "http://10.246.195.157:8000/api";
+const baseUrlForLink = "http://10.246.195.157:8000";
+const baseURlForImages = "http://10.246.195.157:8000/storage";
 
 /// Construit l'URL complète pour une image provenant du stockage Laravel
 String getFullImageUrl(String? path, {String defaultImage = "assets/images/saf.jpg"}) {
   if (path == null || path.isEmpty) return defaultImage;
   if (path.startsWith('http')) return path;
   if (path.startsWith('assets/')) return path;
-  return "$baseURlForImages/$path";
+  
+  // Supprimer le slash initial si présent pour éviter les doubles slashes
+  String cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  return "$baseURlForImages/$cleanPath";
+}
+
+/// Retourne l'ImageProvider approprié (NetworkImage ou AssetImage)
+ImageProvider getImageProvider(String? path, {String defaultImage = "assets/images/saf.jpg"}) {
+  String url = getFullImageUrl(path, defaultImage: defaultImage);
+  if (url.startsWith('http')) {
+    return NetworkImage(url);
+  } else {
+    return AssetImage(url);
+  }
 }
 
 // APP INFO
@@ -23,6 +39,10 @@ const competencesURL = '$baseURL/profile/competences';
 const configsURL = '$baseURL/profile/configs';
 const upgradeProfileURL = '$baseURL/profile/upgrade';
 const specializedDetailsURL = '$baseURL/profile/specialized-details';
+const portfolioURL = '$baseURL/portfolio';
+String userPortfolioURL(int userId) => '$baseURL/users/$userId/portfolio';
+const certificationURL = '$baseURL/certifications';
+String userCertificationURL(int userId) => '$baseURL/users/$userId/certifications';
 
 // WALLETS
 const walletsURL = '$baseURL/wallets'; // GET

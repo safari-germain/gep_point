@@ -26,6 +26,12 @@ class _TransactionsHistoryScreenState extends State<TransactionsHistoryScreen> {
   }
 
   @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +66,9 @@ class _TransactionsHistoryScreenState extends State<TransactionsHistoryScreen> {
                         icon: Icons.send,
                         isSelected: selectedPage == 0,
                         onTap: () {
-                          pageController.animateToPage(0, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          if (pageController.hasClients) {
+                            pageController.animateToPage(0, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          }
                         },
                       ),
                       _ActionButton(
@@ -68,7 +76,9 @@ class _TransactionsHistoryScreenState extends State<TransactionsHistoryScreen> {
                         icon: Icons.download,
                         isSelected: selectedPage == 1,
                         onTap: () {
-                          pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          if (pageController.hasClients) {
+                            pageController.animateToPage(1, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                          }
                         },
                       ),
                     ],
@@ -78,29 +88,26 @@ class _TransactionsHistoryScreenState extends State<TransactionsHistoryScreen> {
 
                 /// PageView des transactions
                 Expanded(
-                  child: provider.transactions.isEmpty 
-                    ? const Center(child: Text("Aucune transaction"))
-                    : PageView(
-                        controller: pageController,
-                        onPageChanged: (index) {
-                          setState(() {
-                            selectedPage = index;
-                          });
-                        },
-                        children: [
-                          /// Transactions envoyées
-                          _TransactionsList(
-                            transactions: sentTransactions,
-                            isIncome: false,
-                          ),
-
-                          /// Transactions reçues
-                          _TransactionsList(
-                            transactions: receivedTransactions,
-                            isIncome: true,
-                          ),
-                        ],
+                  child: PageView(
+                    controller: pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        selectedPage = index;
+                      });
+                    },
+                    children: [
+                      /// Transactions envoyées
+                      _TransactionsList(
+                        transactions: sentTransactions,
+                        isIncome: false,
                       ),
+                      /// Transactions reçues
+                      _TransactionsList(
+                        transactions: receivedTransactions,
+                        isIncome: true,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -201,9 +208,18 @@ class _TransactionsList extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      "De: ${tx.senderName ?? 'Système'}",
+                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                    Text(
+                      "Vers: ${tx.receiverName ?? 'Inconnu'}",
+                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
                       tx.createdAt.toString().split(' ')[0],
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: Colors.grey,
                       ),
                     ),
