@@ -15,15 +15,15 @@ import 'package:gep_point/themes/configs/tc_text_button_theme.dart';
 import 'package:gep_point/themes/configs/tc_text_input.dart';
 import 'package:gep_point/themes/configs/tc_text_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppThemes {
   AppThemes._();
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    fontFamily: 'Plus Jakarta',
     brightness: Brightness.light,
-    textTheme: TextThemes.lightTextTheme,
+    textTheme: GoogleFonts.interTextTheme(TextThemes.lightTextTheme),
     switchTheme: SwitchThemes.lightSwichThemeData,
     inputDecorationTheme: TextInput.lightInputDecorationTheme,
     elevatedButtonTheme: ElevationButtonTheme.lightElevetedButton,
@@ -46,9 +46,8 @@ class AppThemes {
   //dark mode
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
-    fontFamily: 'Plus Jakarta',
     brightness: Brightness.dark,
-    textTheme: TextThemes.darkTextTheme,
+    textTheme: GoogleFonts.interTextTheme(TextThemes.darkTextTheme),
     switchTheme: SwitchThemes.darkSwichThemeData,
     inputDecorationTheme: TextInput.darkInputDecorationTheme,
     elevatedButtonTheme: ElevationButtonTheme.darkElevetedButton,

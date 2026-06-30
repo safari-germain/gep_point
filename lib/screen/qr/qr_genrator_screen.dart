@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:gep_point/constants.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'package:flutter/rendering.dart';
 
 import 'package:gep_point/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 class MyQrScreen extends StatelessWidget {
-  const MyQrScreen({super.key});
+  MyQrScreen({super.key});
+
+  final GlobalKey _qrKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +63,9 @@ class MyQrScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // QR Code
-                  QrImageView(
+                  RepaintBoundary(
+                    key: _qrKey,
+                    child: QrImageView(
                     data: qrData,
                     version: QrVersions.auto,
                     size: 220,
@@ -83,6 +90,7 @@ class MyQrScreen extends StatelessWidget {
                         ),
                       );
                     },
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -109,8 +117,23 @@ class MyQrScreen extends StatelessWidget {
                         ),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Share.share(qrData);
+                        onPressed: () async {
+                          try {
+                            RenderRepaintBoundary boundary = _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+                            ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                            ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                            Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+                            final tempDir = Directory.systemTemp;
+                            final file = await File('${tempDir.path}/qr_code.png').create();
+                            await file.writeAsBytes(pngBytes);
+
+                            await Share.shareXFiles([XFile(file.path)], text: 'Voici mon QR Code pour GEP Point');
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors du partage')));
+                            }
+                          }
                         },
                         icon: const Icon(Icons.share),
                         label: const Text("Share link"),

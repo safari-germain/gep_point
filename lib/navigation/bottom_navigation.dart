@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gep_point/constants.dart';
 import 'package:gep_point/screen/home/conversion/history_conversion.dart';
 import 'package:gep_point/screen/home/home_page.dart';
+import 'package:gep_point/screen/home/transactions/history_page.dart';
 import 'package:gep_point/screen/home/transactions/history_screen.dart';
 import 'package:gep_point/screen/profile/profile_user.dart';
 import 'package:iconsax/iconsax.dart';
@@ -18,7 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final pages = const [
     HomePage(),
-    ConversionHistoryScreen(),
+    HistoryPage(),
     TransactionsHistoryScreen(),
     ProfileUserScren(),
   ];

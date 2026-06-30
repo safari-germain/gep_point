@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:gep_point/api_constants.dart';
 import 'package:gep_point/models/m_transaction.dart';
+import 'package:gep_point/models/m_withdrawal.dart';
 import 'package:gep_point/services/s_dio/dio_service.dart';
 
 class TransactionService {
@@ -16,6 +17,21 @@ class TransactionService {
       }
     } on DioException catch (e) {
       print("Erreur TransactionService.getTransactions: ${e.message}");
+    }
+    return [];
+  }
+
+  /// Récupère l'historique des retraits de l'utilisateur
+  Future<List<WithdrawalModel>> getWithdrawals() async {
+    try {
+      final response = await _dio.get('$baseURL/withdrawals');
+      if (response.statusCode == 200) {
+        // Le endpoint Laravel paginate(20) retourne un objet avec une clé 'data'
+        final List<dynamic> data = response.data['data'] ?? [];
+        return data.map((json) => WithdrawalModel.fromJson(json)).toList();
+      }
+    } on DioException catch (e) {
+      print("Erreur TransactionService.getWithdrawals: ${e.message}");
     }
     return [];
   }

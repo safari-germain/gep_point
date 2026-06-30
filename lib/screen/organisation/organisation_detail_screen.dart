@@ -11,6 +11,7 @@ import 'package:gep_point/api_constants.dart';
 import 'package:provider/provider.dart';
 import 'package:gep_point/screen/organisation/add_organisation_contact_screen.dart';
 import 'package:gep_point/screen/organisation/send_points_multi_screen.dart';
+import 'package:gep_point/screen/qr/scan_screen.dart';
 import 'package:image_picker/image_picker.dart';
 
 class OrganisationDetailScreen extends StatefulWidget {
@@ -108,19 +109,25 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
                       });
                     }
                   },
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: selectedImage != null
-                        ? FileImage(selectedImage!) as ImageProvider
-                        : (org?.image != null
-                            ? NetworkImage("$baseURlForImages/${org!.image}")
-                            : null),
-                    child: selectedImage == null && org?.image == null
-                        ? const Icon(Icons.camera_alt,
-                            color: Colors.grey, size: 30)
-                        : null,
-                  ),
+                  child: selectedImage != null
+                      ? ClipOval(
+                          child: Image.file(selectedImage!,
+                              width: 80, height: 80, fit: BoxFit.cover))
+                      : (org?.image != null
+                          ? ClipOval(
+                              child: Image.network(
+                                "$baseURlForImages/${org!.image}",
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.grey,
+                                    size: 30),
+                              ),
+                            )
+                          : const Icon(Icons.camera_alt,
+                              color: Colors.grey, size: 30)),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -235,16 +242,16 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<String>(
-                  title: const Text("Marchand -> Standard)"),
+                  title: const Text("Marchand"),
                   value: 'marchand',
                   groupValue: selectedType,
                   onChanged: (val) => setModalState(() => selectedType = val!),
                 ),
-                RadioListTile<String>(
-                  title: const Text("Non-Standard"),
-                  value: 'notoriete',
-                  groupValue: selectedType,
-                  onChanged: (val) => setModalState(() => selectedType = val!),
+                ListTile(
+                  title: const Text("Point non marchand"),
+                  leading: const Icon(Icons.star, color: Colors.amber),
+                  onTap: () => setModalState(() => selectedType = 'notoriete'),
+                  selected: selectedType == 'notoriete',
                 ),
               ],
             ),
@@ -271,40 +278,8 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
         return;
       }
 
-      final idController = TextEditingController();
-      final bool? idConfirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text("Saisissez votre ID"),
-          content: TextField(
-            controller: idController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: "Votre ID Utilisateur",
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Annuler")),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Confirmer"),
-            ),
-          ],
-        ),
-      );
-
-      if (idConfirmed == true && idController.text.isNotEmpty) {
-        final currentUserId = int.tryParse(idController.text);
-        if (currentUserId == null) return;
+      final currentUserId = context.read<AuthProvider>().user?.id;
+      if (currentUserId == null) return;
 
         setState(() => _isLoading = true);
         final result = await _orgService.distributePoints(
@@ -318,11 +293,10 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text(result['message'])));
           if (result['success']) {
-            context.read<WalletProvider>().fetchBalances();
+            _loadBalances();
             _fetchData();
           }
         }
-      }
     }
   }
 
@@ -478,10 +452,22 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 30,
-                      backgroundImage: org?.image != null
-                          ? NetworkImage("$baseURlForImages/${org!.image}")
-                          : const AssetImage("assets/images/pharma.jpeg")
-                              as ImageProvider,
+                      backgroundColor: Colors.grey.shade200,
+                      child: org?.image != null
+                          ? ClipOval(
+                              child: Image.network(
+                                "$baseURlForImages/${org!.image}",
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.business_rounded,
+                                    color: Colors.white,
+                                    size: 28),
+                              ),
+                            )
+                          : const Icon(Icons.business_rounded,
+                              color: Colors.grey, size: 28),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -643,7 +629,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Points Notoriété",
+                        "Points non marchand",
                         style: TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -890,18 +876,27 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
         leading: CircleAvatar(
           radius: 22,
           backgroundColor: primaryColor.withOpacity(0.1),
-          backgroundImage: hasProfile
-              ? (user!.profile!.startsWith('http')
-                  ? NetworkImage(user.profile!)
-                  : AssetImage(user.profile!) as ImageProvider)
-              : null,
-          child: !hasProfile
-              ? Text(
+          child: hasProfile
+              ? ClipOval(
+                  child: Image.network(
+                    user!.profile!.startsWith('http')
+                        ? user.profile!
+                        : "$baseURlForImages/${user.profile}",
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Text(
+                      user.name[0],
+                      style: const TextStyle(
+                          color: primaryColor, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )
+              : Text(
                   user?.name[0] ?? '?',
                   style: const TextStyle(
                       color: primaryColor, fontWeight: FontWeight.bold),
-                )
-              : null,
+                ),
         ),
         title: Text(
           user?.name ?? 'Utilisateur inconnu',
@@ -981,11 +976,11 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
                   groupValue: selectedType,
                   onChanged: (val) => setModalState(() => selectedType = val!),
                 ),
-                RadioListTile<String>(
-                  title: const Text("Notoriété (Non-Standard)"),
-                  value: 'notoriete',
-                  groupValue: selectedType,
-                  onChanged: (val) => setModalState(() => selectedType = val!),
+                ListTile(
+                  title: const Text("Point non marchand (Non-Standard)"),
+                  leading: const Icon(Icons.star, color: Colors.amber),
+                  onTap: () => setModalState(() => selectedType = 'notoriete'),
+                  selected: selectedType == 'notoriete',
                 ),
               ],
             ),
@@ -1023,7 +1018,7 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(result['message'])));
         if (result['success']) {
-          context.read<WalletProvider>().fetchBalances();
+          _loadBalances();
           _fetchData();
         }
       }
@@ -1031,7 +1026,10 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
   }
 
   Future<void> _scanAction(double availableBalance) async {
-    final scannedIdStr = await _promptManualEntry(context, "ID scanné");
+    final scannedIdStr = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanScreen(returnMode: true)),
+    );
 
     if (scannedIdStr != null && context.mounted) {
       final scannedId = int.tryParse(scannedIdStr.toString());
@@ -1068,17 +1066,53 @@ class _OrganisationDetailScreenState extends State<OrganisationDetailScreen> {
         );
 
         if (confirmed == true && amountController.text.isNotEmpty) {
+          final amount = double.tryParse(amountController.text) ?? 0;
+          if (amount <= 0) return;
+
+          String selectedType = 'marchand';
+          final bool? typeConfirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => StatefulBuilder(builder: (context, setModalState) {
+              return AlertDialog(
+                title: const Text("Choisir le type de point"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<String>(
+                      title: const Text("Marchand"),
+                      value: 'marchand',
+                      groupValue: selectedType,
+                      onChanged: (val) => setModalState(() => selectedType = val!),
+                    ),
+                    ListTile(
+                      title: const Text("Point non marchand"),
+                      leading: const Icon(Icons.star, color: Colors.amber),
+                      onTap: () => setModalState(() => selectedType = 'notoriete'),
+                      selected: selectedType == 'notoriete',
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Annuler")),
+                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Confirmer")),
+                ],
+              );
+            }),
+          );
+
+          if (typeConfirmed != true) return;
+
           setState(() => _isLoading = true);
           final result = await _orgService.distributePoints(
             beneficiaryId: scannedId,
-            amount: double.tryParse(amountController.text) ?? 0,
+            amount: amount,
+            pointType: selectedType,
           );
           setState(() => _isLoading = false);
           if (context.mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(result['message'])));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
             if (result['success']) {
-              context.read<WalletProvider>().fetchBalances();
+              _loadBalances();
               _fetchData();
             }
           }

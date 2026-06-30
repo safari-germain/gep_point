@@ -149,12 +149,19 @@ class _ValidatorScreenState extends State<ValidatorScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: org!.image != null
-                        ? NetworkImage(org!.image!)
-                        : null,
-                    child: org!.image == null
-                        ? const Icon(Icons.business)
-                        : null,
+                    backgroundColor: primaryColor.withOpacity(0.1),
+                    child: org!.image != null
+                        ? ClipOval(
+                            child: Image.network(
+                              org!.image!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.business),
+                            ),
+                          )
+                        : const Icon(Icons.business),
                   ),
                   title: Text(org!.name ),
                   subtitle:

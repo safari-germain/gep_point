@@ -21,7 +21,7 @@ class DetailProfilScreen extends StatefulWidget {
 
 class _DetailProfilScreenState extends State<DetailProfilScreen> {
   final ImagePicker _picker = ImagePicker();
-  
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && context.mounted) {
@@ -49,7 +49,9 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20, right: 20, top: 20,
+            left: 20,
+            right: 20,
+            top: 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -112,7 +114,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
         builder: (context, auth, wallet, child) {
           final currentUser = auth.user;
           final user = widget.viewedUser ?? currentUser;
-          
+
           if (user == null) return const Center(child: Text("Non connecté"));
           final isOwnProfile = widget.viewedUser == null || widget.viewedUser?.id == currentUser?.id;
 
@@ -127,9 +129,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: user.profile != null
-                            ? NetworkImage(getFullImageUrl(user.profile)) as ImageProvider
-                            : const AssetImage('assets/images/saf.jpg'),
+                        backgroundImage: getImageProvider('$baseURlForImages/${user.profile}'),
                       ),
                       Positioned(
                         bottom: 0,
@@ -162,7 +162,8 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                               children: [
                                 Icon(Icons.verified_user, color: Colors.white, size: 12),
                                 SizedBox(width: 4),
-                                Text("BASIC", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                Text("BASIC",
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -206,6 +207,48 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                         padding: const EdgeInsets.all(defaultPadding),
                         child: const PointBadget(points: 10),
                       ),
+                      
+                      if (user.role == 'marketeur' && user.marketeurCode != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            "Code Marketeur : ${user.marketeurCode}",
+                            style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                      
+                      if (user.competences.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: user.competences.map((comp) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  comp.name,
+                                  style: const TextStyle(color: AppColors.primary, fontSize: 12),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -235,7 +278,6 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
 
                 const SizedBox(height: 24),
 
-                // SECTIONS CONDITIONNELLES SELON LE NIVEAU
                 if (user.profileLevel >= 2) ...[
                   _buildSectionTitle("Expériences Professionnelles"),
                   if (user.experiences.isEmpty)
@@ -244,12 +286,29 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                     ...user.experiences.map((exp) => _buildExperienceItem(exp)),
                 ],
 
-                if (user.profileLevel == 3) ...[
+                if (user.profileLevel >= 3) ...[
                   const SizedBox(height: 16),
                   _buildSectionTitle("Portfolio"),
-                  const _EmptySection(text: "Le portfolio sera bientôt disponible"),
+                  if (user.portfolios.isEmpty)
+                    const _EmptySection(text: "Aucun projet portfolio")
+                  else
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: user.portfolios.length,
+                        itemBuilder: (ctx, i) => _buildPortfolioItem(user.portfolios[i]),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  _buildSectionTitle("Certifications"),
+                  if (user.certifications.isEmpty)
+                    const _EmptySection(text: "Aucune certification renseignée")
+                  else
+                    ...user.certifications.map((cert) => _buildCertificationItem(cert)),
                 ],
-                
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -275,6 +334,56 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
           subtitle: Text(exp.companyName),
           trailing: Text("${exp.startDate.year}"),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPortfolioItem(PortfolioModel p) {
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: (p.imageUrl != null || p.imagePath != null)
+                ? Image(
+                    image: getImageProvider(p.imageUrl ?? p.imagePath),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  )
+                : Container(color: Colors.white10, child: const Icon(Icons.image, color: Colors.white24)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(p.title,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildCertificationItem(CertificationModel cert) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.workspace_premium, color: Colors.amber),
+        ),
+        title: Text(cert.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text(cert.institution, style: const TextStyle(fontSize: 12, color: Colors.white70)),
       ),
     );
   }

@@ -32,16 +32,16 @@ class _VBalanceCarouselState extends State<VBalanceCarousel> {
 
     final cards = [
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: VBalanceCard(
           pointType: PointType.standard,
           balance: "${walletProvider.getBalance('standard')} pts",
-          estimation: "≈ ${(walletProvider.getBalance('standard') * 0.02).toStringAsFixed(2)} USD", // Taux indicatif exemple
+          estimation: "≈ ${(walletProvider.getBalance('standard') * 0.02).toStringAsFixed(2)} USD",
           onTap: () {},
         ),
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: VBalanceCard(
           pointType: PointType.cash,
           balance: "${walletProvider.getBalance('cash')} pts",
@@ -50,7 +50,7 @@ class _VBalanceCarouselState extends State<VBalanceCarousel> {
         ),
       ),
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
         child: VBalanceCard(
           pointType: PointType.notoriete,
           balance: "${walletProvider.getBalance('notoriete')} pts",
@@ -61,23 +61,23 @@ class _VBalanceCarouselState extends State<VBalanceCarousel> {
     ];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CarouselSlider(
           items: cards,
           options: CarouselOptions(
-            height: 200,
-            enlargeCenterPage: true,
-            enlargeFactor: 0.25,
-            viewportFraction: 0.85,
-            autoPlay: false,
-            enableInfiniteScroll: cards.length > 1,
+            height: 220,
+            enlargeCenterPage: false,
+            viewportFraction: 0.9,
+            enableInfiniteScroll: false,
+            padEnds: false,
             onPageChanged: (index, reason) {
               setState(() => _currentIndex = index);
             },
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         /// INDICATEUR
         Row(
@@ -88,11 +88,11 @@ class _VBalanceCarouselState extends State<VBalanceCarousel> {
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: isActive ? 18 : 8,
+              width: isActive ? 24 : 8,
               height: 8,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: isActive ? Colors.deepPurple : Colors.grey.shade400,
+                color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
               ),
             );
           }),

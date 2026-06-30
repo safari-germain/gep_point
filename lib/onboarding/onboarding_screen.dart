@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gep_point/constants.dart';
 import 'package:gep_point/models/m_onbarding.dart';
 import 'package:gep_point/screen/auth/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -124,9 +125,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (_currentIndex == onboardingPages.length - 1) {
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('onboarding_seen', true);
+                    if (mounted) {
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                    }
                   } else {
                     _controller.nextPage(
                       duration: const Duration(milliseconds: 400),

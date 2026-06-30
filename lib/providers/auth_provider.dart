@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:gep_point/api_constants.dart';
 import 'package:gep_point/models/m_user.dart';
 import 'package:gep_point/services/s_dio/dio_service.dart';
+import 'package:gep_point/services/s_device_token.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -35,6 +36,10 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('access_token', token);
 
         _user = UserModel.fromJson(response.data['user']);
+        
+        // Enregistrer le token de notification
+        DeviceTokenService().registerDeviceToken();
+        
         return true;
       }
     } on DioException catch (e) {
@@ -71,12 +76,9 @@ class AuthProvider extends ChangeNotifier {
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        if (response.data['token'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('access_token', response.data['token']);
-          _user = UserModel.fromJson(response.data['user']);
-        }
-        return true;
+        // Appeler automatiquement le login pour connecter l'utilisateur
+        final loginSuccess = await login(email, password);
+        return loginSuccess;
       }
     } on DioException catch (e) {
       _error = e.response?.data['message'] ?? "Erreur d'inscription";
@@ -107,6 +109,9 @@ class AuthProvider extends ChangeNotifier {
         final response = await _dio.get(userURL);
         if (response.statusCode == 200) {
           _user = UserModel.fromJson(response.data['user']);
+          
+          // Mettre à jour le token de notification au cas où
+          DeviceTokenService().registerDeviceToken();
         }
       } catch (e) {
         // Token invalide ou expiré

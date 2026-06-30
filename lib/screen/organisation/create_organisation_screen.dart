@@ -15,6 +15,7 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _marketeurCodeController = TextEditingController();
   
   bool _isLoading = false;
 
@@ -33,6 +34,7 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen> {
         name: _nameController.text,
         description: _descriptionController.text,
         validatorUserId: widget.currentUserId,
+        marketeurCode: _marketeurCodeController.text.isNotEmpty ? _marketeurCodeController.text : null,
       );
 
       if (result['success']) {
@@ -70,6 +72,11 @@ class _CreateOrganisationScreenState extends State<CreateOrganisationScreen> {
               controller: _descriptionController,
               hintText: "Description",
               maxLines: 3,
+            ),
+            const SizedBox(height: defaultPadding),
+            VUGepTextField(
+              controller: _marketeurCodeController,
+              hintText: "Code marketeur (Optionnel)",
             ),
             const SizedBox(height: defaultPadding),
             

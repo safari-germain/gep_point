@@ -27,6 +27,12 @@ class _ProfileUpgradeScreenState extends State<ProfileUpgradeScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final wallet = context.watch<WalletProvider>();
@@ -39,7 +45,7 @@ class _ProfileUpgradeScreenState extends State<ProfileUpgradeScreen> {
       );
     }
 
-    final plans = [
+    final allPlans = [
       {
         'level': 1,
         'title': 'Profil Basic',
@@ -78,6 +84,56 @@ class _ProfileUpgradeScreenState extends State<ProfileUpgradeScreen> {
       },
     ];
 
+    // Filtrer : afficher le niveau actuel + les niveaux supérieurs uniquement
+    final plans = allPlans.where((p) => (p['level'] as int) >= currentLevel).toList();
+
+    // Si l'utilisateur est déjà au niveau max
+    if (currentLevel >= 3) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text('Améliorer mon Profil'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.black87,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.workspace_premium, size: 80, color: Colors.amber.shade700),
+                const SizedBox(height: 24),
+                const Text(
+                  'Profil Supérieur',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Félicitations ! Vous avez atteint le niveau maximum.\nVotre profil bénéficie de toutes les fonctionnalités.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade600, height: 1.5),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Retour'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size(200, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -105,7 +161,7 @@ class _ProfileUpgradeScreenState extends State<ProfileUpgradeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Choisissez le niveau qui correspond à vos ambitions professionnelles.',
+                  'Passez au niveau suivant pour débloquer plus de fonctionnalités.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,

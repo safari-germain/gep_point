@@ -173,9 +173,22 @@ Widget _roleCard({
                 ),
                 child: CircleAvatar(
                   radius: 26,
-                  backgroundImage: imageUrl.startsWith('http')
-                      ? NetworkImage(imageUrl) as ImageProvider
-                      : AssetImage(imageUrl),
+                  backgroundColor: Colors.grey.shade200,
+                  child: imageUrl.startsWith('http')
+                      ? ClipOval(
+                          child: Image.network(
+                            imageUrl,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(icon,
+                                color: primaryColor, size: 22),
+                          ),
+                        )
+                      : ClipOval(
+                          child: Image.asset(imageUrl,
+                              width: 52, height: 52, fit: BoxFit.cover),
+                        ),
                 ),
               ),
 

@@ -53,8 +53,8 @@ class ExperienceModel {
     'company_name': companyName,
     'job_title': jobTitle,
     'description': description,
-    'start_date': startDate.toIso8601String(),
-    'end_date': endDate?.toIso8601String(),
+    'start_date': startDate.toIso8601String().split('T')[0],
+    'end_date': endDate?.toIso8601String().split('T')[0],
   };
 }
 
@@ -79,4 +79,105 @@ class ConfigurationModel {
       type: json['type'] ?? 'string',
     );
   }
+}
+
+class PortfolioModel {
+  final int id;
+  final int userId;
+  final String title;
+  final String? description;
+  final String? imagePath;
+  final String? imageUrl;
+  final List<String> images;
+  final List<String> imageUrls;
+  final String? url;
+  final DateTime? createdAt;
+
+  PortfolioModel({
+    required this.id,
+    required this.userId,
+    required this.title,
+    this.description,
+    this.imagePath,
+    this.imageUrl,
+    this.images = const [],
+    this.imageUrls = const [],
+    this.url,
+    this.createdAt,
+  });
+
+  factory PortfolioModel.fromJson(Map<String, dynamic> json) {
+    return PortfolioModel(
+      id: json['id'],
+      userId: json['user_id'],
+      title: json['title'] ?? '',
+      description: json['description'],
+      imagePath: json['image_path'],
+      imageUrl: json['image_url'],
+      images: json['images'] != null ? List<String>.from(json['images']) : [],
+      imageUrls: json['image_urls'] != null ? List<String>.from(json['image_urls']) : [],
+      url: json['url'],
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
+    'title': title,
+    'description': description,
+    'image_path': imagePath,
+    'image_url': imageUrl,
+    'images': images,
+    'image_urls': imageUrls,
+    'url': url,
+  };
+}
+
+class CertificationModel {
+  final int id;
+  final int userId;
+  final String title;
+  final String institution;
+  final String? description;
+  final String? imagePath;
+  final String? imageUrl;
+  final DateTime? grantedAt;
+
+  CertificationModel({
+    required this.id,
+    required this.userId,
+    required this.title,
+    required this.institution,
+    this.description,
+    this.imagePath,
+    this.imageUrl,
+    this.grantedAt,
+  });
+
+  factory CertificationModel.fromJson(Map<String, dynamic> json) {
+    return CertificationModel(
+      id: json['id'],
+      userId: json['user_id'],
+      title: json['title'] ?? '',
+      institution: json['institution'] ?? '',
+      description: json['description'],
+      imagePath: json['image_path'],
+      imageUrl: json['image_url'],
+      grantedAt: json['granted_at'] != null ? DateTime.tryParse(json['granted_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
+    'title': title,
+    'institution': institution,
+    'description': description,
+    'image_path': imagePath,
+    'image_url': imageUrl,
+    'granted_at': grantedAt?.toIso8601String(),
+  };
 }

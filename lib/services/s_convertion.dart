@@ -6,16 +6,16 @@ class ConversionService {
   final Dio _dio = ApiClient().dio;
 
   /// Récupère les taux de conversion actuels (ex: Standard vers Cash)
-  Future<Map<String, dynamic>> getConversionRates() async {
+  Future<List<dynamic>> getConversionRates() async {
     try {
       final response = await _dio.get(pointRatesURL);
       if (response.statusCode == 200) {
-        return response.data;
+        return response.data as List? ?? [];
       }
     } on DioException catch (e) {
       print("Erreur ConversionService.getConversionRates: ${e.message}");
     }
-    return {};
+    return [];
   }
 
   /// Effectue une conversion de points

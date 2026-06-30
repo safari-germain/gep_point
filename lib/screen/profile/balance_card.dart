@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gep_point/constants.dart';
 
 enum PointType {
   standard,
@@ -39,6 +38,7 @@ class _VBalanceCardState extends State<VBalanceCard> {
     final gradient = widget.customGradient ?? _getGradient(widget.pointType);
     final icon = _getIcon(widget.pointType);
     final title = _getTitle(widget.pointType);
+    final theme = Theme.of(context);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -49,77 +49,91 @@ class _VBalanceCardState extends State<VBalanceCard> {
         scale: _scale,
         duration: const Duration(milliseconds: 150),
         child: Container(
-          padding: const EdgeInsets.all(defaultPadding),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: gradient,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: gradient.last.withOpacity(0.5),
-                blurRadius: 25,
-                offset: const Offset(0, 15),
+                color: gradient.last.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               /// HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    title.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  Icon(icon, color: Colors.white, size: 26),
                 ],
               ),
 
-              /// BALANCE
-              const Text(
-                "Balance actuelle",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
+              const SizedBox(height: 24),
 
-              Text(
-                widget.balance,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+              /// BALANCE
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Solde Disponible",
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.balance,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
 
               /// ESTIMATION
-              const Text(
-                "Estimation du prix",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-
-              const SizedBox(height: 6),
-
-              Text(
-                widget.estimation,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                child: Text(
+                  widget.estimation,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -133,9 +147,8 @@ class _VBalanceCardState extends State<VBalanceCard> {
     switch (type) {
       case PointType.standard:
         return [
-          const Color(0xFF6E4DFF),
-          const Color(0xFF896CFE),
-          const Color(0xFF5F3DFF),
+          const Color(0xFF1877F2), // Bleu Facebook principal
+          const Color(0xFF0E5AD6),
         ];
       case PointType.cash:
         return [
@@ -168,7 +181,7 @@ class _VBalanceCardState extends State<VBalanceCard> {
       case PointType.cash:
         return "Point Cash";
       case PointType.notoriete:
-        return "Point Notoriété";
+        return "Point non marchand";
     }
   }
 }

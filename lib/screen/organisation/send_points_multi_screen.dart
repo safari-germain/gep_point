@@ -154,8 +154,8 @@ class _SendPointsMultiScreenState extends State<SendPointsMultiScreen> {
                       dropdownColor: Colors.grey.shade900,
                       isExpanded: true,
                       items: const [
-                        DropdownMenuItem(value: 'marchand', child: Text("Points Marchand (Standard)", style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'notoriete', child: Text("Points Notoriété (Non-Standard)", style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'marchand', child: Text("Points Marchand", style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'notoriete', child: Text("Points non marchand (Non-Standard)", style: TextStyle(color: Colors.white))),
                       ],
                       onChanged: (val) => setState(() => _selectedPointType = val!),
                     ),

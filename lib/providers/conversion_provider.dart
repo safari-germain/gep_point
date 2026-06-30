@@ -29,7 +29,16 @@ class ConversionProvider extends ChangeNotifier {
 
   Future<void> fetchRates() async {
     try {
-      _rates = await _service.getConversionRates();
+      final List<dynamic> rawRates = await _service.getConversionRates();
+      
+      // Conversion de la liste d'objets en Map pour la compatibilité UI (ex: standard_to_cash)
+      Map<String, dynamic> formattedRates = {};
+      for (var rate in rawRates) {
+        String key = "${rate['from_point_type'] ?? rate['from_point']}_to_${rate['to_point_type'] ?? rate['to_point']}";
+        formattedRates[key] = rate['rate'];
+      }
+      
+      _rates = formattedRates;
       notifyListeners();
     } catch (e) {
       print("Erreur ConversionProvider.fetchRates: $e");

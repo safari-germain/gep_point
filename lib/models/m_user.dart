@@ -3,20 +3,23 @@ import 'package:gep_point/models/m_specialized_profile.dart';
 
 class UserModel {
   final int id;
-  final String name;
-  final String? prenom;
-  final String? email;
-  final String? genre;
-  final String? phone;
+  String name;
+  String? prenom;
+  String? email;
+  String? genre;
+  String? phone;
   final String role;
   final String status;
-  final String? profile;
-  final String? adresse;
+  String? profile;
+  String? adresse;
+  String? marketeurCode;
   final int? organisationId;
   final OrganisationModel? organisation;
-  final int profileLevel;
-  final List<CompetenceModel> competences;
-  final List<ExperienceModel> experiences;
+  int profileLevel;
+  List<CompetenceModel> competences;
+  List<ExperienceModel> experiences;
+  List<PortfolioModel> portfolios;
+  List<CertificationModel> certifications;
 
   UserModel({
     required this.id,
@@ -29,12 +32,18 @@ class UserModel {
     required this.status,
     this.profile,
     this.adresse,
+    this.marketeurCode,
     this.organisationId,
     this.organisation,
     this.profileLevel = 1,
-    this.competences = const [],
-    this.experiences = const [],
-  });
+    List<CompetenceModel>? competences,
+    List<ExperienceModel>? experiences,
+    List<PortfolioModel>? portfolios,
+    List<CertificationModel>? certifications,
+  })  : this.competences = competences ?? [],
+        this.experiences = experiences ?? [],
+        this.portfolios = portfolios ?? [],
+        this.certifications = certifications ?? [];
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -48,6 +57,7 @@ class UserModel {
       status: json['status'] ?? 'active',
       profile: json['profile'],
       adresse: json['adresse'],
+      marketeurCode: json['marketeur_code'],
       organisationId: json['organisation_id'],
       organisation: json['organisation'] != null ? OrganisationModel.fromJson(json['organisation']) : null,
       profileLevel: json['profile_level'] ?? 1,
@@ -56,6 +66,12 @@ class UserModel {
           : [],
       experiences: json['experiences'] != null 
           ? (json['experiences'] as List).map((e) => ExperienceModel.fromJson(e)).toList() 
+          : [],
+      portfolios: json['portfolios'] != null
+          ? (json['portfolios'] as List).map((p) => PortfolioModel.fromJson(p)).toList()
+          : [],
+      certifications: json['certifications'] != null
+          ? (json['certifications'] as List).map((c) => CertificationModel.fromJson(c)).toList()
           : [],
     );
   }
@@ -72,6 +88,7 @@ class UserModel {
       "status": status,
       "profile": profile,
       "adresse": adresse,
+      "marketeur_code": marketeurCode,
       "organisation_id": organisationId,
       "organisation": organisation?.toJson(),
       "profile_level": profileLevel,
@@ -89,6 +106,7 @@ class UserModel {
     String? status,
     String? profile,
     String? adresse,
+    String? marketeurCode,
     int? organisationId,
     OrganisationModel? organisation,
     int? profileLevel,
@@ -104,6 +122,7 @@ class UserModel {
       status: status ?? this.status,
       profile: profile ?? this.profile,
       adresse: adresse ?? this.adresse,
+      marketeurCode: marketeurCode ?? this.marketeurCode,
       organisationId: organisationId ?? this.organisationId,
       organisation: organisation ?? this.organisation,
       profileLevel: profileLevel ?? this.profileLevel,

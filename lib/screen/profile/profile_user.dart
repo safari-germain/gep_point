@@ -11,12 +11,15 @@ import 'package:gep_point/screen/profile/components/sub_profile_card.dart';
 import 'package:gep_point/screen/profile/detail_profile_screen.dart';
 import 'package:gep_point/screen/qr/qr_genrator_screen.dart';
 import 'package:gep_point/screen/validator/validator_screen.dart';
+import 'package:gep_point/screen/profile/language_screen.dart';
 import 'package:gep_point/themes/configs/tc_theme_mode_provider.dart';
 import 'package:gep_point/providers/auth_provider.dart';
 import 'package:gep_point/providers/wallet_provider.dart';
 import 'package:gep_point/providers/profile_provider.dart';
 import 'package:gep_point/api_constants.dart';
 import 'package:gep_point/screen/profile/upgrade/profile_upgrade_screen.dart';
+import 'package:gep_point/screen/search/talent_detail_screen.dart';
+import 'package:gep_point/screen/auth/login_screen.dart';
 import 'package:provider/provider.dart';
 
 class ProfileUserScren extends StatefulWidget {
@@ -61,18 +64,18 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
               Consumer2<AuthProvider, ProfileProvider>(
                 builder: (context, authProvider, profileProvider, child) {
                   final user = authProvider.user;
-                  print('les données utilisateur:$user');
+
                   if (user == null) return const SizedBox();
 
                   String activeName = "${user.name} ${user.prenom ?? ''}";
-                  String activeImage = getFullImageUrl(user.profile);
+                  String activeImage = getFullImageUrl('$baseURlForImages/${user.profile}');
                   String? inactiveImage;
 
-                  if (profileProvider.activeMode == ProfileMode.organisation &&
-                      user.organisation != null) {
+                  if (profileProvider.activeMode == ProfileMode.organisation && user.organisation != null) {
                     activeName = user.organisation!.name;
-                    activeImage = getFullImageUrl(user.organisation!.image, defaultImage: "assets/images/pharma.jpeg");
-                    inactiveImage = getFullImageUrl(user.profile);
+                    activeImage = getFullImageUrl("$baseURlForImages/${user.organisation!.image}",
+                        defaultImage: "assets/images/pharma.jpeg");
+                    inactiveImage = getFullImageUrl('$baseURlForImages/${user.profile}');
                   }
 
                   return MainProfileCard(
@@ -97,10 +100,13 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                   final user = authProvider.user;
                   return SubProfileCard(
                     name: user?.name ?? 'Utilisateur',
-                    imageSrc: getFullImageUrl(user?.profile),
+                    imageSrc: getFullImageUrl("$baseURlForImages/${user?.profile}"),
                     press: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => DetailProfilScreen()));
+                      if (user != null && user.profileLevel >= 2) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => TalentDetailScreen(user: user)));
+                      } else {
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => DetailProfilScreen()));
+                      }
                     },
                   );
                 },
@@ -175,9 +181,7 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                 builder: (context, walletProvider, child) {
                   return BrushedMetalCard(
                     child: HolographicCreditCard(
-                      amount: walletProvider
-                          .getBalance('standard')
-                          .toStringAsFixed(0), // renvoie "10"
+                      amount: walletProvider.getBalance('standard').toStringAsFixed(2), // renvoie "10"
                       baseGradient: [Color(0xFF141E30), Color(0xFF243B55)],
                       icon: Icons.cast_sharp,
                       subtitle: 'Total Point',
@@ -192,14 +196,12 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                 text: "Mon Code QR",
                 svgSrc: "assets/icons/Preferences.svg",
                 press: () {
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => MyQrScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => MyQrScreen()));
                 },
               ),
               const SizedBox(height: defaultPadding),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: defaultPadding, vertical: defaultPadding / 2),
+                padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding / 2),
                 child: Text(
                   "Tâches",
                   style: Theme.of(context).textTheme.titleSmall,
@@ -224,8 +226,7 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
               ),
               const SizedBox(height: defaultPadding),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: defaultPadding, vertical: defaultPadding / 2),
+                padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding / 2),
                 child: Text(
                   "Personalistation",
                   style: Theme.of(context).textTheme.titleSmall,
@@ -241,21 +242,18 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                 text: "Mode Sombre",
                 svgSrc: "assets/icons/Preferences.svg",
                 press: () {
-                  Provider.of<ThemeModeProvider>(context, listen: false)
-                      .toggleTheme();
+                  Provider.of<ThemeModeProvider>(context, listen: false).toggleTheme();
                 },
                 trailing: Switch(
                   value: Theme.of(context).brightness == Brightness.dark,
                   onChanged: (value) {
-                    Provider.of<ThemeModeProvider>(context, listen: false)
-                        .toggleTheme();
+                    Provider.of<ThemeModeProvider>(context, listen: false).toggleTheme();
                   },
                 ),
               ),
               const SizedBox(height: defaultPadding),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: defaultPadding, vertical: defaultPadding / 2),
+                padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding / 2),
                 child: Text(
                   "Parametre",
                   style: Theme.of(context).textTheme.titleSmall,
@@ -265,7 +263,7 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                 text: "Langue",
                 svgSrc: "assets/icons/Language.svg",
                 press: () {
-                  //Navigator.pushNamed(context, selectLanguageScreenRoute);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen()));
                 },
               ),
               ProfileMenuListTile(
@@ -283,28 +281,19 @@ class _ProfileUserScrenState extends State<ProfileUserScren> {
                 onTap: () {
                   context.read<AuthProvider>().logout();
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                        builder: (_) => const Scaffold(
-                            body: Center(
-                                child: Text(
-                                    "Logged Out")))), // Update with your login route
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 },
                 child: CommonCard(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: defaultPadding,
-                        vertical: defaultPadding / 2),
+                    padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: defaultPadding / 2),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
                         Text(
                           'Se déconnecter',
-                          style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400),
+                          style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w400),
                         ),
                         Icon(
                           Icons.logout,

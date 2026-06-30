@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:gep_point/notification/notification_manager.dart';
 
 import 'package:gep_point/onboarding/saut_bound.dart';
 import 'package:gep_point/providers/auth_provider.dart';
@@ -11,6 +12,8 @@ import 'package:gep_point/providers/conversion_provider.dart';
 import 'package:gep_point/providers/profile_provider.dart';
 import 'package:gep_point/providers/transaction_provider.dart';
 import 'package:gep_point/providers/profile_upgrade_provider.dart';
+import 'package:gep_point/providers/configuration_provider.dart';
+import 'package:gep_point/providers/promotion_provider.dart';
 import 'package:gep_point/services/s_dio/dio_service.dart';
 import 'package:gep_point/themes/configs/tc_theme_mode_provider.dart';
 import 'package:gep_point/themes/theme.dart';
@@ -26,6 +29,9 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialiser les notifications
+  await NotificationManager.initialize();
 
   // Initialiser ApiClient (Dio)
   await ApiClient().init();
@@ -50,6 +56,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ConversionProvider()),
         ChangeNotifierProvider(create: (_) => PointSaleProvider()),
         ChangeNotifierProvider(create: (_) => ProfileUpgradeProvider()),
+        ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
+        ChangeNotifierProvider(create: (_) => PromotionProvider()),
       ],
       child: const MyApp(),
     ),

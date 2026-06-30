@@ -6,9 +6,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 dependencies {
-
     implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
-
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 android {
     namespace = "com.example.gep_point"
@@ -18,6 +17,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {

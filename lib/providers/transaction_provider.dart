@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gep_point/models/m_transaction.dart';
+import 'package:gep_point/models/m_withdrawal.dart';
 import 'package:gep_point/services/s_transactions.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionService _service = TransactionService();
 
   List<TransactionModel> _transactions = [];
+  List<WithdrawalModel> _withdrawals = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _currentPage = 1;
@@ -13,11 +15,28 @@ class TransactionProvider extends ChangeNotifier {
   String? _error;
 
   List<TransactionModel> get transactions => _transactions;
+  List<WithdrawalModel> get withdrawals => _withdrawals;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   int get currentPage => _currentPage;
   int get lastPage => _lastPage;
   String? get error => _error;
+
+  /// ---------------------- Retraits ---------------------- ///
+  Future<void> fetchWithdrawals() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _withdrawals = await _service.getWithdrawals();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// ---------------------- Transactions globales ---------------------- ///
   Future<void> fetchTransactions() async {
@@ -98,9 +117,8 @@ class TransactionProvider extends ChangeNotifier {
     try {
       final result = await _service.getUserTransfers(userId, page: 1);
 
-      final List<dynamic> data = result['data'] ?? [];
-      _transactions =
-          data.map((json) => TransactionModel.fromJson(json)).toList();
+      final List<TransactionModel> data = result['transactions'] ?? [];
+      _transactions = data;
 
       _currentPage = result['current_page'] ?? 1;
       _lastPage = result['last_page'] ?? 1;
@@ -122,11 +140,9 @@ class TransactionProvider extends ChangeNotifier {
       final nextPage = _currentPage + 1;
       final result = await _service.getUserTransfers(userId, page: nextPage);
 
-      final List<dynamic> data = result['data'] ?? [];
-      final newTransactions =
-          data.map((json) => TransactionModel.fromJson(json)).toList();
+      final List<TransactionModel> data = result['transactions'] ?? [];
 
-      _transactions.addAll(newTransactions);
+      _transactions.addAll(data);
       _currentPage = result['current_page'] ?? nextPage;
       _lastPage = result['last_page'] ?? _lastPage;
     } catch (e) {
@@ -147,9 +163,8 @@ class TransactionProvider extends ChangeNotifier {
     try {
       final result = await _service.getUserReceipts(userId, page: 1);
 
-      final List<dynamic> data = result['data'] ?? [];
-      _transactions =
-          data.map((json) => TransactionModel.fromJson(json)).toList();
+      final List<TransactionModel> data = result['transactions'] ?? [];
+      _transactions = data;
 
       _currentPage = result['current_page'] ?? 1;
       _lastPage = result['last_page'] ?? 1;
@@ -181,11 +196,8 @@ class TransactionProvider extends ChangeNotifier {
   try {
     final nextPage = loadMore ? _currentPage + 1 : 1;
     final result = await _service.getOrganisationTransfers(orgId, page: nextPage);
-    print('resultat est! $result');
 
-    // Récupérer directement la liste des transactions
-    final List<TransactionModel> newTransactions =
-        List<TransactionModel>.from(result['transactions'] ?? []);
+    final List<TransactionModel> newTransactions = result['transactions'] ?? [];
 
     if (loadMore) {
       _transactions.addAll(newTransactions);
