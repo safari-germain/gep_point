@@ -13,6 +13,7 @@ import 'package:gep_point/providers/profile_provider.dart';
 import 'package:gep_point/providers/transaction_provider.dart';
 import 'package:gep_point/providers/profile_upgrade_provider.dart';
 import 'package:gep_point/providers/configuration_provider.dart';
+import 'package:gep_point/providers/promotion_provider.dart';
 import 'package:gep_point/services/s_dio/dio_service.dart';
 import 'package:gep_point/themes/configs/tc_theme_mode_provider.dart';
 import 'package:gep_point/themes/theme.dart';
@@ -56,6 +57,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PointSaleProvider()),
         ChangeNotifierProvider(create: (_) => ProfileUpgradeProvider()),
         ChangeNotifierProvider(create: (_) => ConfigurationProvider()),
+        ChangeNotifierProvider(create: (_) => PromotionProvider()),
       ],
       child: const MyApp(),
     ),

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:gep_point/models/m_user.dart';
 import 'package:gep_point/providers/wallet_provider.dart';
 import 'package:gep_point/providers/transaction_provider.dart';
+import 'package:gep_point/providers/promotion_provider.dart';
 import 'package:gep_point/api_constants.dart';
 import 'package:provider/provider.dart';
+import 'package:gep_point/providers/configuration_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SendPointScreen extends StatefulWidget {
@@ -19,6 +21,15 @@ class _SendPointScreenState extends State<SendPointScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   bool _isLoading = false;
+  String _feePayer = 'receiver';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PromotionProvider>().fetchActiveTransferPromotion();
+    });
+  }
 
   @override
   void dispose() {
@@ -30,11 +41,12 @@ class _SendPointScreenState extends State<SendPointScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    
+
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     final success = await context.read<TransactionProvider>().transfer(
       widget.recipient.id,
       amount,
+      feePayer: _feePayer,
     );
 
     if (mounted) {
@@ -65,7 +77,19 @@ class _SendPointScreenState extends State<SendPointScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final walletProvider = context.watch<WalletProvider>();
+    final configProvider = context.watch<ConfigurationProvider>();
+    final promotionProvider = context.watch<PromotionProvider>();
     final balance = walletProvider.getUserBalance('standard');
+    final transferFeeStr = configProvider.getValue('fee_transfer_user_to_user', defaultValue: '2');
+    final baseFeePercent = double.tryParse(transferFeeStr) ?? 2.0;
+
+    // Calcul du frais effectif après promotion
+    double effectiveFeePercent = baseFeePercent;
+    if (promotionProvider.hasPromotion) {
+      effectiveFeePercent =
+          baseFeePercent * (1 - (promotionProvider.activeDiscountPercentage! / 100));
+      effectiveFeePercent = effectiveFeePercent < 0 ? 0 : effectiveFeePercent;
+    }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -129,12 +153,83 @@ class _SendPointScreenState extends State<SendPointScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              
-              const Text(
-                "Frais de transaction : 2%",
-                style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+
+              // Affichage des frais + promotion
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _amountController,
+                builder: (context, value, child) {
+                  final amount = double.tryParse(value.text) ?? 0.0;
+                  final feeAmount = (amount * effectiveFeePercent) / 100;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Frais de transaction
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline, size: 14, color: Colors.orange),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              "Frais : ${feeAmount.toStringAsFixed(2)} pts"
+                              " (${effectiveFeePercent.toStringAsFixed(2)}%"
+                              "${promotionProvider.hasPromotion ? ' après promo' : ''})",
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Bannière de promotion (si active)
+                      if (promotionProvider.hasPromotion) ...[
+                        const SizedBox(height: 10),
+                        _buildPromoBanner(theme, promotionProvider),
+                      ],
+                    ],
+                  );
+                },
               ),
-              
+              const SizedBox(height: 16),
+
+              Text(
+                "Qui supporte les frais de transfert ?",
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Moi", style: TextStyle(fontSize: 14)),
+                      value: 'sender',
+                      groupValue: _feePayer,
+                      onChanged: (val) {
+                        setState(() => _feePayer = val!);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Le bénéficiaire", style: TextStyle(fontSize: 14)),
+                      value: 'receiver',
+                      groupValue: _feePayer,
+                      onChanged: (val) {
+                        setState(() => _feePayer = val!);
+                      },
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 48),
 
               // Confirm Button
@@ -169,6 +264,53 @@ class _SendPointScreenState extends State<SendPointScreen> {
     );
   }
 
+  Widget _buildPromoBanner(ThemeData theme, PromotionProvider promo) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.shade700,
+            Colors.green.shade400,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_offer_rounded, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "🎉 Promotion active : ${promo.activePromotionName ?? ''}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${promo.activeDiscountPercentage!.toStringAsFixed(0)}% de réduction sur les frais de transfert !",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRecipientCard(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -179,18 +321,34 @@ class _SendPointScreenState extends State<SendPointScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: theme.colorScheme.primary,
-            backgroundImage: widget.recipient.profile != null
-                ? getImageProvider(widget.recipient.profile)
-                : null,
-            child: widget.recipient.profile == null
-                ? Text(
-                    widget.recipient.name[0].toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                  )
-                : null,
+          ClipOval(
+            child: SizedBox(
+              width: 60,
+              height: 60,
+              child: widget.recipient.profile != null
+                  ? Image.network(
+                      getFullImageUrl(widget.recipient.profile),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => CircleAvatar(
+                        radius: 30,
+                        backgroundColor: theme.colorScheme.primary,
+                        child: Text(
+                          widget.recipient.name[0].toUpperCase(),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )
+                  : CircleAvatar(
+                      radius: 30,
+                      backgroundColor: theme.colorScheme.primary,
+                      child: Text(
+                        widget.recipient.name[0].toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -199,7 +357,8 @@ class _SendPointScreenState extends State<SendPointScreen> {
               children: [
                 Text(
                   "Destinataire",
-                  style: TextStyle(color: theme.colorScheme.onPrimaryContainer.withOpacity(0.6), fontSize: 12),
+                  style: TextStyle(
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.6), fontSize: 12),
                 ),
                 Text(
                   widget.recipient.name,
@@ -207,7 +366,8 @@ class _SendPointScreenState extends State<SendPointScreen> {
                 ),
                 Text(
                   widget.recipient.email ?? widget.recipient.phone ?? "",
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7)),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7)),
                 ),
               ],
             ),

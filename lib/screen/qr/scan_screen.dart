@@ -5,7 +5,8 @@ import 'package:gep_point/services/s_user.dart';
 import 'package:gep_point/screen/point/send_point.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  final bool returnMode;
+  const ScanScreen({super.key, this.returnMode = false});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -56,10 +57,14 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
         if (user != null) {
           if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => SendPointScreen(recipient: user)),
-            );
+            if (widget.returnMode) {
+              Navigator.pop(context, code);
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => SendPointScreen(recipient: user)),
+              );
+            }
           }
         } else {
           _showError("Utilisateur non trouvé.");

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gep_point/api_constants.dart';
 import 'package:gep_point/components/indication_action_card.dart';
 import 'package:gep_point/constants.dart';
 import 'package:gep_point/screen/home/balance_screen.dart';
@@ -15,7 +16,7 @@ import 'package:gep_point/screen/search/user_search_screen.dart';
 import 'package:gep_point/components/withdrawal_cta_banner.dart';
 import 'package:gep_point/screen/home/withdrawal_request_screen.dart';
 import 'package:gep_point/screen/home/transactions/history_page.dart';
-
+import 'package:gep_point/screen/notifications_screen.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -60,13 +61,28 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: defaultPadding, vertical: 12),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        backgroundImage: user?.profile != null ? NetworkImage(user!.profile!) : null,
-                        child: user?.profile == null
-                            ? Icon(Icons.person, color: theme.colorScheme.primary)
-                            : null,
+                      ClipOval(
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: user?.profile != null
+                              ? Image.network(
+                                  '$baseURlForImages/${user!.profile!}',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return CircleAvatar(
+                                      radius: 24,
+                                      backgroundColor: theme.colorScheme.primaryContainer,
+                                      child: Icon(Icons.person, color: theme.colorScheme.primary),
+                                    );
+                                  },
+                                )
+                              : CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: theme.colorScheme.primaryContainer,
+                                  child: Icon(Icons.person, color: theme.colorScheme.primary),
+                                ),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -89,7 +105,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                        },
                         color: theme.colorScheme.onSurface,
                       ),
                     ],
@@ -156,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                     Text("Vos Portefeuilles", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     const VBalanceCarousel(),
-                    
+
                     const SizedBox(height: 24),
 
                     // Actions Rapides
@@ -165,8 +183,10 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildQuickAction(context, Icons.qr_code_scanner, "Scanner", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
-                        _buildQuickAction(context, Icons.qr_code_rounded, "Recevoir", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyQrScreen()))),
+                        _buildQuickAction(context, Icons.qr_code_scanner, "Scanner",
+                            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
+                        _buildQuickAction(context, Icons.qr_code_rounded, "Recevoir",
+                            () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyQrScreen()))),
                         _buildQuickAction(context, Icons.currency_exchange_rounded, "Convertir", () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Fonctionnalité 'Convertir' bientôt disponible.")),

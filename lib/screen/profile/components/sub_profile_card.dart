@@ -19,6 +19,7 @@ class SubProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('lurl image est:$imageSrc');
     return Card(
       elevation: 1,
       child: ListTile(
@@ -61,7 +62,7 @@ class SubProfileCard extends StatelessWidget {
         ),
         trailing: SvgPicture.asset(
           "assets/icons/miniRight.svg",
-          color: Theme.of(context).iconTheme.color!.withOpacity(0.4),
+          color: (Theme.of(context).iconTheme.color ?? Theme.of(context).colorScheme.onSurface).withOpacity(0.4),
         ),
       ),
     );

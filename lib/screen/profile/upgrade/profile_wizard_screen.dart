@@ -485,6 +485,8 @@ class _ProfileWizardScreenState extends State<ProfileWizardScreen> {
                         image: draft.image,
                       );
                     }
+                    // Recharger le profil complet pour récupérer les données fraîches
+                    await authProvider.checkLoginStatus();
                     _showSuccessDialog();
                   } else {
                     if (context.mounted) {

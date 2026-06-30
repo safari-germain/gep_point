@@ -53,8 +53,8 @@ class ExperienceModel {
     'company_name': companyName,
     'job_title': jobTitle,
     'description': description,
-    'start_date': startDate.toIso8601String(),
-    'end_date': endDate?.toIso8601String(),
+    'start_date': startDate.toIso8601String().split('T')[0],
+    'end_date': endDate?.toIso8601String().split('T')[0],
   };
 }
 

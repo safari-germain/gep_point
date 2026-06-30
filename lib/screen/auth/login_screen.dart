@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: context.watch<AuthProvider>().isLoading 
                             ? const CircularProgressIndicator(color: Colors.white) 
-                            : const Text("Log in"),
+                            : const Text("Se connecter"),
                         ),
                       ),
                       Row(

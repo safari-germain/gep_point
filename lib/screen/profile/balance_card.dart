@@ -181,7 +181,7 @@ class _VBalanceCardState extends State<VBalanceCard> {
       case PointType.cash:
         return "Point Cash";
       case PointType.notoriete:
-        return "Point Notoriété";
+        return "Point non marchand";
     }
   }
 }

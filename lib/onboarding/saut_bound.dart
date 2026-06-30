@@ -3,6 +3,7 @@ import 'package:gep_point/constants.dart';
 import 'package:gep_point/navigation/bottom_navigation.dart';
 import 'package:gep_point/onboarding/onboarding_screen.dart';
 import 'package:gep_point/providers/auth_provider.dart';
+import 'package:gep_point/screen/auth/login_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -98,10 +99,9 @@ class _BounceLogoSplashState extends State<BounceLogoSplash> with TickerProvider
         bool seenOnboarding = prefs.getBool('onboarding_seen') ?? false;
         
         if (seenOnboarding) {
-           // Déjà vu onboarding -> Login (supposant que OnboardingScreen gère le login ou qu'il y a un LoginScreen)
-           // Ici on suit la logique existante ou on redirige vers Onboarding qui contient le bouton Login
+           // Déjà vu onboarding -> Login
            Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
           );
         } else {
           Navigator.of(context).pushReplacement(

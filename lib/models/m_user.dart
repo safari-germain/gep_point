@@ -12,6 +12,7 @@ class UserModel {
   final String status;
   String? profile;
   String? adresse;
+  String? marketeurCode;
   final int? organisationId;
   final OrganisationModel? organisation;
   int profileLevel;
@@ -31,6 +32,7 @@ class UserModel {
     required this.status,
     this.profile,
     this.adresse,
+    this.marketeurCode,
     this.organisationId,
     this.organisation,
     this.profileLevel = 1,
@@ -55,6 +57,7 @@ class UserModel {
       status: json['status'] ?? 'active',
       profile: json['profile'],
       adresse: json['adresse'],
+      marketeurCode: json['marketeur_code'],
       organisationId: json['organisation_id'],
       organisation: json['organisation'] != null ? OrganisationModel.fromJson(json['organisation']) : null,
       profileLevel: json['profile_level'] ?? 1,
@@ -85,6 +88,7 @@ class UserModel {
       "status": status,
       "profile": profile,
       "adresse": adresse,
+      "marketeur_code": marketeurCode,
       "organisation_id": organisationId,
       "organisation": organisation?.toJson(),
       "profile_level": profileLevel,
@@ -102,6 +106,7 @@ class UserModel {
     String? status,
     String? profile,
     String? adresse,
+    String? marketeurCode,
     int? organisationId,
     OrganisationModel? organisation,
     int? profileLevel,
@@ -117,6 +122,7 @@ class UserModel {
       status: status ?? this.status,
       profile: profile ?? this.profile,
       adresse: adresse ?? this.adresse,
+      marketeurCode: marketeurCode ?? this.marketeurCode,
       organisationId: organisationId ?? this.organisationId,
       organisation: organisation ?? this.organisation,
       profileLevel: profileLevel ?? this.profileLevel,

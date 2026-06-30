@@ -59,6 +59,7 @@ class OrganisationService {
     required String name,
     required String description,
     required int validatorUserId,
+    String? marketeurCode,
     String? imagePath,
   }) async {
     try {
@@ -66,6 +67,7 @@ class OrganisationService {
         'name': name,
         'description': description,
         'validator_user_id': validatorUserId,
+        if (marketeurCode != null) 'marketeur_code': marketeurCode,
         if (imagePath != null)
           'image': await MultipartFile.fromFile(imagePath, filename: imagePath.split('/').last),
       });

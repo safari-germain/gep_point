@@ -30,7 +30,7 @@ class DividerListTile extends StatelessWidget {
           trailing: trailing ?? (isShowForwordArrow
               ? SvgPicture.asset(
                   "assets/icons/miniRight.svg",
-                  colorFilter: ColorFilter.mode(Theme.of(context).iconTheme.color!.withOpacity(0.4), BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode((Theme.of(context).iconTheme.color ?? Theme.of(context).colorScheme.onSurface).withOpacity(0.4), BlendMode.srcIn),
                 )
               : null),
         ),
@@ -65,7 +65,7 @@ class DividerListTileWithTrilingText extends StatelessWidget {
             svgSrc,
             height: 24,
             width: 24,
-            colorFilter: ColorFilter.mode(Theme.of(context).iconTheme.color!, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(Theme.of(context).iconTheme.color ?? Theme.of(context).colorScheme.onSurface, BlendMode.srcIn),
           ),
           title: Column(
             children: [
@@ -84,7 +84,7 @@ class DividerListTileWithTrilingText extends StatelessWidget {
               const SizedBox(width: 4),
               SvgPicture.asset(
                 "assets/icons/miniRight.svg",
-                colorFilter: ColorFilter.mode(Theme.of(context).iconTheme.color!.withOpacity(0.4), BlendMode.srcIn),
+                colorFilter: ColorFilter.mode((Theme.of(context).iconTheme.color ?? Theme.of(context).colorScheme.onSurface).withOpacity(0.4), BlendMode.srcIn),
               ),
             ],
           ),

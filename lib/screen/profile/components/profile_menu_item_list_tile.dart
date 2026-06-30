@@ -28,7 +28,7 @@ class ProfileMenuListTile extends StatelessWidget {
         height: 24,
         width: 24,
         colorFilter: ColorFilter.mode(
-          Theme.of(context).iconTheme.color!,
+          Theme.of(context).iconTheme.color ?? Theme.of(context).colorScheme.onSurface,
           BlendMode.srcIn,
         ),
       ),

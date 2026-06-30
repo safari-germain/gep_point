@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:gep_point/providers/transaction_provider.dart';
 import 'package:gep_point/models/m_transaction.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class PointsChart extends StatefulWidget {
@@ -14,7 +13,10 @@ class PointsChart extends StatefulWidget {
 }
 
 class _PointsChartState extends State<PointsChart> {
-  String _selectedPointType = 'marchand'; // 'marchand' or 'notoriete'
+  String _selectedPointType = 'standard'; // 'standard' or 'notoriete'
+
+  String _selectedTimeFilter = 'week'; // 'week', 'year', 'custom'
+  DateTimeRange? _customDateRange;
 
   @override
   void initState() {
@@ -28,12 +30,20 @@ class _PointsChartState extends State<PointsChart> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final transactionProvider = context.watch<TransactionProvider>();
-    
+
     final filteredTransactions = transactionProvider.transactions.where((t) {
       return t.pointType.toLowerCase() == _selectedPointType;
     }).toList();
 
-    final spots = _generateSpots(filteredTransactions);
+    // Appliquer le filtre de temps
+    final now = DateTime.now();
+    final startDate = _getStartDateForFilter(now);
+
+    final timeFilteredTransactions = filteredTransactions.where((t) {
+      return t.createdAt.isAfter(startDate) && t.createdAt.isBefore(now);
+    }).toList();
+
+    final spots = _generateSpots(timeFilteredTransactions, now, startDate);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -64,6 +74,8 @@ class _PointsChartState extends State<PointsChart> {
               _buildTypeFilter(theme),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildTimeFilter(theme),
           const SizedBox(height: 24),
           if (transactionProvider.isLoading)
             const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()))
@@ -142,7 +154,7 @@ class _PointsChartState extends State<PointsChart> {
                     LineChartBarData(
                       isCurved: true,
                       curveSmoothness: 0.35,
-                      color: _selectedPointType == 'marchand' ? theme.colorScheme.primary : theme.colorScheme.tertiary,
+                      color: _selectedPointType == 'standard' ? theme.colorScheme.primary : theme.colorScheme.tertiary,
                       barWidth: 3,
                       isStrokeCapRound: true,
                       belowBarData: BarAreaData(
@@ -150,8 +162,10 @@ class _PointsChartState extends State<PointsChart> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            (_selectedPointType == 'marchand' ? theme.colorScheme.primary : theme.colorScheme.tertiary).withOpacity(0.3),
-                            (_selectedPointType == 'marchand' ? theme.colorScheme.primary : theme.colorScheme.tertiary).withOpacity(0.0),
+                            (_selectedPointType == 'standard' ? theme.colorScheme.primary : theme.colorScheme.tertiary)
+                                .withOpacity(0.3),
+                            (_selectedPointType == 'standard' ? theme.colorScheme.primary : theme.colorScheme.tertiary)
+                                .withOpacity(0.0),
                           ],
                         ),
                         show: true,
@@ -182,8 +196,8 @@ class _PointsChartState extends State<PointsChart> {
       ),
       child: Row(
         children: [
-          _buildFilterChip('marchand', 'Marchand', theme),
-          _buildFilterChip('notoriete', 'Notoriété', theme),
+          _buildFilterChip('standard', 'standard', theme),
+          _buildFilterChip('notoriete', 'Point N.M', theme),
         ],
       ),
     );
@@ -214,38 +228,155 @@ class _PointsChartState extends State<PointsChart> {
     );
   }
 
-  List<FlSpot> _generateSpots(List<TransactionModel> transactions) {
-    final now = DateTime.now();
-    final Map<int, double> dailySum = {};
+  List<FlSpot> _generateSpots(List<TransactionModel> transactions, DateTime now, DateTime startDate) {
+    final Map<String, double> dateSum = {};
+    final difference = now.difference(startDate).inDays;
 
-    // Initialize with 0 for the last 7 days
-    for (int i = 0; i < 7; i++) {
-      dailySum[i] = 0;
-    }
-
-    for (var t in transactions) {
-      final diff = now.difference(t.createdAt).inDays;
-      if (diff >= 0 && diff < 7) {
-        final index = 6 - diff;
-        dailySum[index] = (dailySum[index] ?? 0) + t.amount;
+    if (_selectedTimeFilter == 'week') {
+      // Derniers 7 jours
+      for (int i = 0; i < 7; i++) {
+        final date = now.subtract(Duration(days: 6 - i));
+        dateSum[date.toIso8601String().split('T')[0]] = 0;
+      }
+    } else if (_selectedTimeFilter == 'year') {
+      // Derniers 12 mois
+      for (int i = 0; i < 12; i++) {
+        final date = now.subtract(Duration(days: now.day - 1 + (30 * (11 - i))));
+        dateSum[date.toIso8601String().split('T')[0]] = 0;
       }
     }
 
-    return dailySum.entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList()
-      ..sort((a, b) => a.x.compareTo(b.x));
-  }
-
-  double _calculateMaxY(List<FlSpot> spots) {
-    if (spots.isEmpty) return 100;
-    double max = 0;
-    for (var spot in spots) {
-      if (spot.y > max) max = spot.y;
+    for (var t in transactions) {
+      final key = t.createdAt.toIso8601String().split('T')[0];
+      dateSum[key] = (dateSum[key] ?? 0) + t.amount;
     }
-    return max == 0 ? 100 : max * 1.2;
+
+    List<FlSpot> spots = [];
+    int index = 0;
+    dateSum.forEach((date, sum) {
+      spots.add(FlSpot(index.toDouble(), sum));
+      index++;
+    });
+
+    return spots;
   }
 
-  double _calculateInterval(List<FlSpot> spots) {
-    double max = _calculateMaxY(spots);
-    return max / 5;
+  DateTime _getStartDateForFilter(DateTime now) {
+    if (_selectedTimeFilter == 'week') {
+      return now.subtract(const Duration(days: 6));
+    } else if (_selectedTimeFilter == 'year') {
+      return now.subtract(const Duration(days: 365));
+    } else if (_selectedTimeFilter == 'custom' && _customDateRange != null) {
+      return _customDateRange!.start;
+    }
+    return now.subtract(const Duration(days: 6));
   }
+
+  Widget _buildTimeFilter(ThemeData theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _buildTimeFilterChip('week', 'Cette semaine', theme),
+                _buildTimeFilterChip('year', 'Cette année', theme),
+                _buildTimeFilterChip('custom', 'Personnalisé', theme),
+              ],
+            ),
+          ),
+        ),
+        if (_selectedTimeFilter == 'custom')
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: GestureDetector(
+              onTap: () async {
+                final DateTimeRange? picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  currentDate: DateTime.now(),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _customDateRange = picked;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.primary),
+                ),
+                child: Text(
+                  _customDateRange != null
+                      ? '${DateFormat('dd/MM').format(_customDateRange!.start)} - ${DateFormat('dd/MM').format(_customDateRange!.end)}'
+                      : 'Sélectionner',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTimeFilterChip(String filter, String label, ThemeData theme) {
+    final isSelected = _selectedTimeFilter == filter;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() {
+          _selectedTimeFilter = filter;
+          if (filter != 'custom') {
+            _customDateRange = null;
+          }
+        }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colorScheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+double _calculateMaxY(List<FlSpot> spots) {
+  if (spots.isEmpty) return 100;
+  double max = 0;
+  for (var spot in spots) {
+    if (spot.y > max) max = spot.y;
+  }
+  return max == 0 ? 100 : max * 1.2;
+}
+
+double _calculateInterval(List<FlSpot> spots) {
+  double max = _calculateMaxY(spots);
+  return max / 5;
 }

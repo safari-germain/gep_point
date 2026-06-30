@@ -393,7 +393,7 @@ class _SearchResultCard extends StatelessWidget {
         child: Row(
           children: [
             // Avatar
-            _buildAvatar(theme, isExpert, isConfirmed),
+            _buildAvatar(context, theme, isExpert, isConfirmed),
             const SizedBox(width: 14),
             // Info
             Expanded(
@@ -490,9 +490,13 @@ class _SearchResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(ThemeData theme, bool isExpert, bool isConfirmed) {
+  Widget _buildAvatar(BuildContext context, ThemeData theme, bool isExpert, bool isConfirmed) {
     final initials = _initials();
-    return Container(
+    // Les profils basiques n'affichent pas leur photo
+    final bool showPhoto = isConfirmed && user.profile != null;
+    final heroTag = 'avatar_search_${user.id}';
+    
+    Widget avatar = Container(
       decoration: isExpert
           ? BoxDecoration(
               shape: BoxShape.circle,
@@ -505,23 +509,35 @@ class _SearchResultCard extends StatelessWidget {
               ],
             )
           : null,
-      child: CircleAvatar(
-        radius: 26,
-        backgroundColor: theme.colorScheme.primaryContainer,
-        backgroundImage: user.profile != null
-            ? getImageProvider(user.profile)
-            : null,
-        child: user.profile == null
-            ? Text(
-                initials,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              )
-            : null,
+      child: Hero(
+        tag: heroTag,
+        child: CircleAvatar(
+          radius: 26,
+          backgroundColor: theme.colorScheme.primaryContainer,
+          backgroundImage: showPhoto
+              ? getImageProvider(user.profile)
+              : null,
+          child: !showPhoto
+              ? Text(
+                  initials,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              : null,
+        ),
       ),
     );
+    
+    if (showPhoto) {
+      avatar = GestureDetector(
+        onTap: () => _openFullScreenPhoto(context, heroTag, user.profile!, user.name),
+        child: avatar,
+      );
+    }
+    
+    return avatar;
   }
 
   Widget _buildBadge(ThemeData theme, String label, Color color) {
@@ -549,6 +565,23 @@ class _SearchResultCard extends StatelessWidget {
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return user.name.isNotEmpty ? user.name[0].toUpperCase() : '?';
   }
+
+  void _openFullScreenPhoto(BuildContext context, String heroTag, String profilePath, String userName) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        barrierDismissible: true,
+        pageBuilder: (_, __, ___) => _FullScreenPhotoViewer(
+          heroTag: heroTag,
+          imageProvider: getImageProvider(profilePath),
+          userName: userName,
+        ),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
+  }
 }
 
 // Extension pour la recherche
@@ -568,5 +601,52 @@ extension UserSearchExtension on UserService {
       debugPrint("Erreur recherche: $e");
     }
     return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISIONNEUSE PLEIN ÉCRAN DE PHOTO
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullScreenPhotoViewer extends StatelessWidget {
+  final String heroTag;
+  final ImageProvider imageProvider;
+  final String userName;
+  const _FullScreenPhotoViewer({
+    required this.heroTag,
+    required this.imageProvider,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black87,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: Text(userName, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Center(
+          child: Hero(
+            tag: heroTag,
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image(
+                  image: imageProvider,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

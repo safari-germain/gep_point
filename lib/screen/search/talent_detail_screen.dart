@@ -66,6 +66,27 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
     setState(() => _loadingCertifications = false);
   }
 
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickAndUploadImage(BuildContext context) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null && context.mounted) {
+      final authProvider = context.read<AuthProvider>();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload en cours...')));
+      final success = await authProvider.uploadProfilePicture(File(image.path));
+      if (context.mounted) {
+        if (success) {
+          setState(() {
+            widget.user.profile = authProvider.user?.profile;
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(success ? 'Profil mis à jour avec succès' : 'Échec de la mise à jour'),
+        ));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -127,34 +148,63 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
               child: Column(children: [
-                Stack(alignment: Alignment.center, children: [
-                  if (_isExpert)
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration:
-                          BoxDecoration(shape: BoxShape.circle, boxShadow: [
-                        BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.35),
-                            blurRadius: 24,
-                            spreadRadius: 4)
-                      ]),
+                  Stack(alignment: Alignment.center, children: [
+                    if (_isExpert)
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration:
+                            BoxDecoration(shape: BoxShape.circle, boxShadow: [
+                          BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.35),
+                              blurRadius: 24,
+                              spreadRadius: 4)
+                        ]),
+                      ),
+                    Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: (widget.user.profile != null && _isConfirmed)
+                              ? () => _openFullScreenPhoto(context, 'profile_hero_${widget.user.id}', widget.user.profile!, widget.user.name)
+                              : null,
+                          child: Hero(
+                            tag: 'profile_hero_${widget.user.id}',
+                            child: CircleAvatar(
+                              radius: 38,
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundImage: (widget.user.profile != null && _isConfirmed)
+                                  ? getImageProvider(widget.user.profile)
+                                  : null,
+                              child: (widget.user.profile == null || !_isConfirmed)
+                                  ? Text(_initials(),
+                                      style: TextStyle(
+                                          color: theme.colorScheme.onPrimaryContainer,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800))
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        if (isOwn)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => _pickAndUploadImage(context),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: theme.colorScheme.surface, width: 2),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  CircleAvatar(
-                    radius: 38,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    backgroundImage: widget.user.profile != null
-                        ? getImageProvider(widget.user.profile)
-                        : null,
-                    child: widget.user.profile == null
-                        ? Text(_initials(),
-                            style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800))
-                        : null,
-                  ),
-                ]),
+                  ]),
                 const SizedBox(height: 12),
                 Text('${widget.user.name} ${widget.user.prenom ?? ''}',
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -336,9 +386,11 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
           itemCount: widget.user.experiences.length,
           itemBuilder: (_, i) {
             final exp = widget.user.experiences[i];
+            String _fmtDate(DateTime d) =>
+                '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
             final duration = exp.endDate != null
-                ? '${exp.startDate.year} – ${exp.endDate!.year}'
-                : '${exp.startDate.year} – Présent';
+                ? '${_fmtDate(exp.startDate)} – ${_fmtDate(exp.endDate!)}'
+                : '${_fmtDate(exp.startDate)} – En cours';
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -542,7 +594,9 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
 
   Widget _buildCertificationCard(CertificationModel c, bool isOwn) {
     final theme = Theme.of(context);
-    return Container(
+    return GestureDetector(
+      onTap: () => _openCertificationDetail(context, c),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -595,11 +649,13 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
           ),
         ],
       ]),
+    ),
     );
   }
 
   Widget _buildPortfolioCard(PortfolioModel p, bool isOwn) {
     return GestureDetector(
+      onTap: () => _openPortfolioDetail(context, p),
       onLongPress: isOwn ? () => _showDeleteConfirm(context, p) : null,
       child: Container(
         decoration: BoxDecoration(
@@ -1127,6 +1183,39 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
         : '?';
   }
 
+  void _openFullScreenPhoto(BuildContext context, String heroTag, String profilePath, String userName) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        barrierDismissible: true,
+        pageBuilder: (_, __, ___) => _FullScreenPhotoViewer(
+          heroTag: heroTag,
+          imageProvider: getImageProvider(profilePath),
+          userName: userName,
+        ),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
+  }
+
+  void _openPortfolioDetail(BuildContext context, PortfolioModel p) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PortfolioDetailPage(portfolio: p),
+      ),
+    );
+  }
+
+  void _openCertificationDetail(BuildContext context, CertificationModel c) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _CertificationDetailPage(certification: c),
+      ),
+    );
+  }
+
   void _showEditCompetencesModal(BuildContext context) async {
     final upgradeProvider = context.read<ProfileUpgradeProvider>();
     final authProvider = context.read<AuthProvider>();
@@ -1236,92 +1325,275 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
     final companyCtrl = TextEditingController(text: experience?.companyName);
     final titleCtrl = TextEditingController(text: experience?.jobTitle);
     final descCtrl = TextEditingController(text: experience?.description);
-    DateTime selectedDate = experience?.startDate ?? DateTime.now();
+    DateTime startDate = experience?.startDate ?? DateTime.now();
+    DateTime? endDate = experience?.endDate;
+    bool isCurrentJob = experience?.endDate == null && experience != null;
 
-    showDialog(
+    String _formatDate(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialog) {
-        return AlertDialog(
-          backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHigh,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text(experience == null ? 'Ajouter' : 'Modifier'),
-          content: SingleChildScrollView(
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setModal) {
+        final modalTheme = Theme.of(ctx);
+        return Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              left: 20,
+              right: 20,
+              top: 20),
+          child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                    controller: companyCtrl,
-                    decoration: const InputDecoration(labelText: 'Entreprise')),
-                TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Poste')),
-                TextField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                    maxLines: 3),
-                const SizedBox(height: 16),
+                // Header
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Début: '),
-                    TextButton(
-                      onPressed: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime(1980),
-                          lastDate: DateTime.now(),
-                        );
-                        if (date != null) setDialog(() => selectedDate = date);
-                      },
-                      child: Text("${selectedDate.year}",
-                          style: TextStyle(color: _amber)),
+                    Text(
+                      experience == null
+                          ? 'Ajouter une expérience'
+                          : 'Modifier l\'expérience',
+                      style: TextStyle(
+                          color: modalTheme.colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: Icon(Icons.close_rounded,
+                          color: modalTheme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                // Fields
+                _modalField('Poste / Titre *', titleCtrl,
+                    hint: 'Ex: Développeur Full Stack'),
+                const SizedBox(height: 12),
+                _modalField('Entreprise *', companyCtrl,
+                    hint: 'Ex: Google, Microsoft...'),
+                const SizedBox(height: 12),
+                _modalField('Description', descCtrl,
+                    hint: 'Décrivez vos responsabilités...', maxLines: 3),
+                const SizedBox(height: 20),
+
+                // Dates section
+                Text('Période',
+                    style: modalTheme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: modalTheme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 10),
+
+                // Start date
+                Row(children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: ctx,
+                          initialDate: startDate,
+                          firstDate: DateTime(1980),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) setModal(() => startDate = date);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: modalTheme.colorScheme.surfaceContainerHighest
+                              .withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: _amber.withOpacity(0.4)),
+                        ),
+                        child: Row(children: [
+                          Icon(Icons.calendar_today_rounded,
+                              size: 16, color: _amber),
+                          const SizedBox(width: 10),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Date de début',
+                                    style: TextStyle(
+                                        color: modalTheme
+                                            .colorScheme.onSurfaceVariant,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 2),
+                                Text(_formatDate(startDate),
+                                    style: TextStyle(
+                                        color: modalTheme.colorScheme.onSurface,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                              ]),
+                        ]),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // End date
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: isCurrentJob
+                          ? null
+                          : () async {
+                              final date = await showDatePicker(
+                                context: ctx,
+                                initialDate:
+                                    endDate ?? DateTime.now(),
+                                firstDate: startDate,
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                setModal(() => endDate = date);
+                              }
+                            },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isCurrentJob
+                              ? _amber.withOpacity(0.08)
+                              : modalTheme
+                                  .colorScheme.surfaceContainerHighest
+                                  .withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: isCurrentJob
+                                  ? _amber.withOpacity(0.3)
+                                  : modalTheme.colorScheme.outlineVariant
+                                      .withOpacity(0.4)),
+                        ),
+                        child: Row(children: [
+                          Icon(Icons.event_rounded,
+                              size: 16,
+                              color: isCurrentJob
+                                  ? _amber
+                                  : modalTheme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 10),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Date de fin',
+                                    style: TextStyle(
+                                        color: modalTheme
+                                            .colorScheme.onSurfaceVariant,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 2),
+                                Text(
+                                    isCurrentJob
+                                        ? 'En cours'
+                                        : endDate != null
+                                            ? _formatDate(endDate!)
+                                            : 'Sélectionner',
+                                    style: TextStyle(
+                                        color: isCurrentJob
+                                            ? _amber
+                                            : modalTheme
+                                                .colorScheme.onSurface,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                              ]),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+
+                // Toggle poste actuel
+                Row(children: [
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: Checkbox(
+                      value: isCurrentJob,
+                      activeColor: _amber,
+                      onChanged: (val) {
+                        setModal(() {
+                          isCurrentJob = val ?? false;
+                          if (isCurrentJob) endDate = null;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text("J'occupe actuellement ce poste",
+                      style: TextStyle(
+                          color: modalTheme.colorScheme.onSurfaceVariant,
+                          fontSize: 13)),
+                ]),
+                const SizedBox(height: 24),
+
+                // Submit
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (companyCtrl.text.isEmpty || titleCtrl.text.isEmpty) {
+                        return;
+                      }
+                      final upgradeProvider =
+                          context.read<ProfileUpgradeProvider>();
+                      final authProvider = context.read<AuthProvider>();
+                      List<ExperienceModel> newExps =
+                          List.from(widget.user.experiences);
+                      final updatedExp = ExperienceModel(
+                        companyName: companyCtrl.text,
+                        jobTitle: titleCtrl.text,
+                        startDate: startDate,
+                        endDate: isCurrentJob ? null : endDate,
+                        description: descCtrl.text,
+                      );
+                      if (experience != null) {
+                        int index = newExps.indexOf(experience);
+                        if (index != -1) {
+                          newExps[index] = updatedExp;
+                        } else {
+                          newExps.add(updatedExp);
+                        }
+                      } else {
+                        newExps.add(updatedExp);
+                      }
+                      final success = await upgradeProvider.saveDetails(
+                        competenceIds:
+                            widget.user.competences.map((c) => c.id).toList(),
+                        experiences: newExps,
+                        authProvider: authProvider,
+                      );
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (success) {
+                        setState(() {
+                          widget.user.experiences.clear();
+                          widget.user.experiences.addAll(newExps);
+                        });
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _amber,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                        experience == null ? 'Enregistrer' : 'Modifier',
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Annuler')),
-            ElevatedButton(
-              onPressed: () async {
-                if (companyCtrl.text.isEmpty || titleCtrl.text.isEmpty) return;
-                final upgradeProvider = context.read<ProfileUpgradeProvider>();
-                final authProvider = context.read<AuthProvider>();
-                List<ExperienceModel> newExps =
-                    List.from(widget.user.experiences);
-                final updatedExp = ExperienceModel(
-                  companyName: companyCtrl.text,
-                  jobTitle: titleCtrl.text,
-                  startDate: selectedDate,
-                  description: descCtrl.text,
-                );
-                if (experience != null) {
-                  int index = newExps.indexOf(experience);
-                  newExps[index] = updatedExp;
-                } else {
-                  newExps.add(updatedExp);
-                }
-                final success = await upgradeProvider.saveDetails(
-                  competenceIds:
-                      widget.user.competences.map((c) => c.id).toList(),
-                  experiences: newExps,
-                  authProvider: authProvider,
-                );
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (success) {
-                  setState(() {
-                    widget.user.experiences.clear();
-                    widget.user.experiences.addAll(newExps);
-                  });
-                }
-              },
-              child: const Text('Valider'),
-            ),
-          ],
         );
       }),
     );
@@ -1636,5 +1908,565 @@ class _TalentDetailScreenState extends State<TalentDetailScreen>
     final uri = Uri.tryParse(url);
     if (uri != null && await canLaunchUrl(uri))
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISIONNEUSE PLEIN ÉCRAN DE PHOTO DE PROFIL
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullScreenPhotoViewer extends StatelessWidget {
+  final String heroTag;
+  final ImageProvider imageProvider;
+  final String userName;
+  const _FullScreenPhotoViewer({
+    required this.heroTag,
+    required this.imageProvider,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: Text(userName,
+            style: const TextStyle(color: Colors.white70, fontSize: 16)),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Center(
+          child: Hero(
+            tag: heroTag,
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image(
+                image: imageProvider,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE DÉTAIL PORTFOLIO
+// ─────────────────────────────────────────────────────────────────────────────
+class _PortfolioDetailPage extends StatefulWidget {
+  final PortfolioModel portfolio;
+  const _PortfolioDetailPage({required this.portfolio});
+
+  @override
+  State<_PortfolioDetailPage> createState() => _PortfolioDetailPageState();
+}
+
+class _PortfolioDetailPageState extends State<_PortfolioDetailPage> {
+  int _currentImageIndex = 0;
+
+  List<String> get _allImages {
+    final imgs = <String>[];
+    if (widget.portfolio.imageUrl != null) imgs.add(widget.portfolio.imageUrl!);
+    if (widget.portfolio.imagePath != null &&
+        !imgs.contains(widget.portfolio.imagePath)) {
+      imgs.add(widget.portfolio.imagePath!);
+    }
+    for (final url in widget.portfolio.imageUrls) {
+      if (!imgs.contains(url)) imgs.add(url);
+    }
+    return imgs;
+  }
+
+  void _openImageFullScreen(String imageUrl, int index) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        pageBuilder: (_, __, ___) => _ImageGalleryViewer(
+          images: _allImages,
+          initialIndex: index,
+        ),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = widget.portfolio;
+    final images = _allImages;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          // App Bar with primary image
+          SliverAppBar(
+            expandedHeight: images.isNotEmpty ? 320 : 120,
+            pinned: true,
+            backgroundColor: theme.colorScheme.surface,
+            foregroundColor: theme.colorScheme.onSurface,
+            flexibleSpace: images.isNotEmpty
+                ? FlexibleSpaceBar(
+                    background: GestureDetector(
+                      onTap: () => _openImageFullScreen(images[0], 0),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image(
+                            image: getImageProvider(images[0]),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: theme.colorScheme.primaryContainer
+                                  .withOpacity(0.3),
+                              child: Icon(Icons.image_rounded,
+                                  size: 64,
+                                  color: theme.colorScheme.outlineVariant),
+                            ),
+                          ),
+                          // Gradient overlay
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.6),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // "Tap to enlarge" hint
+                          Positioned(
+                            bottom: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.zoom_in_rounded,
+                                      color: Colors.white, size: 14),
+                                  SizedBox(width: 4),
+                                  Text('Agrandir',
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(p.title,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 12),
+
+                  // Description
+                  if (p.description != null && p.description!.isNotEmpty) ...[
+                    Text('Description',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: theme.colorScheme.outlineVariant
+                                .withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        p.description!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.6,
+                            color: theme.colorScheme.onSurface),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // URL link
+                  if (p.url != null && p.url!.isNotEmpty) ...[
+                    GestureDetector(
+                      onTap: () async {
+                        final uri = Uri.tryParse(p.url!);
+                        if (uri != null && await canLaunchUrl(uri)) {
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer
+                              .withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: theme.colorScheme.primary.withOpacity(0.3)),
+                        ),
+                        child: Row(children: [
+                          Icon(Icons.open_in_new_rounded,
+                              color: theme.colorScheme.primary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Voir le projet',
+                                    style: TextStyle(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14)),
+                                Text(p.url!,
+                                    style: TextStyle(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.7),
+                                        fontSize: 11),
+                                    overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Gallery images (if more than 1)
+                  if (images.length > 1) ...[
+                    Text('Galerie (${images.length} images)',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 1.1,
+                      ),
+                      itemCount: images.length,
+                      itemBuilder: (_, i) => GestureDetector(
+                        onTap: () => _openImageFullScreen(images[i], i),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image(
+                                image: getImageProvider(images[i]),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: theme.colorScheme.surfaceContainerLow,
+                                  child: Icon(Icons.broken_image_rounded,
+                                      color: theme.colorScheme.outlineVariant),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.zoom_in_rounded,
+                                      color: Colors.white, size: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISIONNEUSE GALERIE IMAGES
+// ─────────────────────────────────────────────────────────────────────────────
+class _ImageGalleryViewer extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  const _ImageGalleryViewer(
+      {required this.images, required this.initialIndex});
+
+  @override
+  State<_ImageGalleryViewer> createState() => _ImageGalleryViewerState();
+}
+
+class _ImageGalleryViewerState extends State<_ImageGalleryViewer> {
+  late PageController _pageCtrl;
+  late int _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.initialIndex;
+    _pageCtrl = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        title: Text('${_current + 1} / ${widget.images.length}',
+            style: const TextStyle(color: Colors.white70)),
+        centerTitle: true,
+      ),
+      body: PageView.builder(
+        controller: _pageCtrl,
+        itemCount: widget.images.length,
+        onPageChanged: (i) => setState(() => _current = i),
+        itemBuilder: (_, i) => GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image(
+                image: getImageProvider(widget.images[i]),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image,
+                    color: Colors.white38, size: 64),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE DÉTAIL CERTIFICATION
+// ─────────────────────────────────────────────────────────────────────────────
+class _CertificationDetailPage extends StatelessWidget {
+  final CertificationModel certification;
+  const _CertificationDetailPage({required this.certification});
+
+  static const _amber = Color(0xFFF59E0B);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = certification;
+    final hasImage = c.imageUrl != null || c.imagePath != null;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        title: const Text('Détail Certification'),
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // Certificate image
+          if (hasImage) ...[
+            GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                PageRouteBuilder(
+                  opaque: false,
+                  barrierColor: Colors.black87,
+                  pageBuilder: (_, __, ___) => _FullScreenPhotoViewer(
+                    heroTag: 'cert_${c.id}',
+                    imageProvider:
+                        getImageProvider(c.imageUrl ?? c.imagePath),
+                    userName: c.title,
+                  ),
+                  transitionsBuilder: (_, anim, __, child) =>
+                      FadeTransition(opacity: anim, child: child),
+                ),
+              ),
+              child: Hero(
+                tag: 'cert_${c.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Image(
+                        image: getImageProvider(c.imageUrl ?? c.imagePath),
+                        width: double.infinity,
+                        height: 240,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 240,
+                          color: _amber.withOpacity(0.1),
+                          child: const Center(
+                              child: Icon(Icons.workspace_premium_rounded,
+                                  color: _amber, size: 64)),
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.zoom_in_rounded,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text('Agrandir',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ] else ...[
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: _amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _amber.withOpacity(0.3)),
+              ),
+              child: const Center(
+                child: Icon(Icons.workspace_premium_rounded,
+                    color: _amber, size: 72),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Title
+          Text(c.title,
+              style: theme.textTheme.headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+
+          // Institution chip
+          Row(children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _amber.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _amber.withOpacity(0.4)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.school_rounded, color: _amber, size: 14),
+                const SizedBox(width: 6),
+                Text(c.institution,
+                    style: const TextStyle(
+                        color: _amber,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+
+          // Granted date
+          if (c.grantedAt != null) ...[
+            Row(children: [
+              Icon(Icons.calendar_month_rounded,
+                  size: 16, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'Obtenu le ${c.grantedAt!.day.toString().padLeft(2, '0')}/${c.grantedAt!.month.toString().padLeft(2, '0')}/${c.grantedAt!.year}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ]),
+            const SizedBox(height: 16),
+          ],
+
+          // Description
+          if (c.description != null && c.description!.isNotEmpty) ...[
+            Text('Description',
+                style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+              ),
+              child: Text(
+                c.description!,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(height: 1.6),
+              ),
+            ),
+          ],
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
   }
 }

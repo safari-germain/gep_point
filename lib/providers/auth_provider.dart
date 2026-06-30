@@ -76,15 +76,9 @@ class AuthProvider extends ChangeNotifier {
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        if (response.data['token'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('access_token', response.data['token']);
-          _user = UserModel.fromJson(response.data['user']);
-          
-          // Enregistrer le token de notification
-          DeviceTokenService().registerDeviceToken();
-        }
-        return true;
+        // Appeler automatiquement le login pour connecter l'utilisateur
+        final loginSuccess = await login(email, password);
+        return loginSuccess;
       }
     } on DioException catch (e) {
       _error = e.response?.data['message'] ?? "Erreur d'inscription";

@@ -21,7 +21,7 @@ class DetailProfilScreen extends StatefulWidget {
 
 class _DetailProfilScreenState extends State<DetailProfilScreen> {
   final ImagePicker _picker = ImagePicker();
-  
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && context.mounted) {
@@ -49,7 +49,9 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20, right: 20, top: 20,
+            left: 20,
+            right: 20,
+            top: 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -112,7 +114,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
         builder: (context, auth, wallet, child) {
           final currentUser = auth.user;
           final user = widget.viewedUser ?? currentUser;
-          
+
           if (user == null) return const Center(child: Text("Non connecté"));
           final isOwnProfile = widget.viewedUser == null || widget.viewedUser?.id == currentUser?.id;
 
@@ -127,7 +129,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: getImageProvider(user.profile),
+                        backgroundImage: getImageProvider('$baseURlForImages/${user.profile}'),
                       ),
                       Positioned(
                         bottom: 0,
@@ -160,7 +162,8 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                               children: [
                                 Icon(Icons.verified_user, color: Colors.white, size: 12),
                                 SizedBox(width: 4),
-                                Text("BASIC", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                Text("BASIC",
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -204,6 +207,48 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                         padding: const EdgeInsets.all(defaultPadding),
                         child: const PointBadget(points: 10),
                       ),
+                      
+                      if (user.role == 'marketeur' && user.marketeurCode != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            "Code Marketeur : ${user.marketeurCode}",
+                            style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                      
+                      if (user.competences.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: user.competences.map((comp) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  comp.name,
+                                  style: const TextStyle(color: AppColors.primary, fontSize: 12),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -256,7 +301,6 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                         itemBuilder: (ctx, i) => _buildPortfolioItem(user.portfolios[i]),
                       ),
                     ),
-                  
                   const SizedBox(height: 16),
                   _buildSectionTitle("Certifications"),
                   if (user.certifications.isEmpty)
@@ -264,7 +308,7 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
                   else
                     ...user.certifications.map((cert) => _buildCertificationItem(cert)),
                 ],
-                
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -318,7 +362,10 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(p.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+          child: Text(p.title,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
         ),
       ]),
     );
@@ -330,7 +377,8 @@ class _DetailProfilScreenState extends State<DetailProfilScreen> {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Container(
-          width: 48, height: 48,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
           child: const Icon(Icons.workspace_premium, color: Colors.amber),
         ),
